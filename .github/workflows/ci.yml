@@ -116,11 +116,11 @@ jobs:
           fi
       - name: Compile CV example (lualatex)
         run: |
-          cd cv
-          if [ ! -f main_example.tex ]; then
+          if [ ! -f cv/main_example.tex ]; then
             echo "cv/main_example.tex is gitignored in this fork (holds real personal data, never committed) - skipping."
             exit 0
           fi
+          cd cv
           lualatex -interaction=nonstopmode -halt-on-error main_example.tex
           test -f main_example.pdf
           if grep -q '^!' main_example.log; then
