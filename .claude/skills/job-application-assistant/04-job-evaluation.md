@@ -1,5 +1,5 @@
 ---
-framework_version: 1.2.4
+framework_version: 1.2.5
 ---
 
 # Job Evaluation Framework
@@ -244,6 +244,56 @@ starting point instead of searching from scratch - still subject to the final-cl
 verification rule above. If it is missing or stale, research per the checklist as usual,
 then write (or overwrite) the file with fresh findings and today's date, so the next
 consumer benefits.
+
+## Job Posting Cache
+
+`/rank` Step 2 and `/apply` Step 0 each do a full fetch of a job posting's text -
+`/rank` to triage-score it, `/apply` to run the authoritative Step 1 evaluation. When a
+job goes through both commands (the common path: rank it, then decide to apply), that
+is the same URL fetched twice for no reason. This cache stores the first full fetch so
+the second command reuses it instead of re-fetching.
+
+**Scope:** only the point that does the **first full fetch** of a posting writes this
+cache - normally `/rank` Step 2, since `/rank` runs before `/apply` in the normal flow.
+`/apply` Step 0 writes it directly when a job reaches `/apply` without having gone
+through `/rank` first (a URL pasted straight in, or a job `/rank` never saw). Do **not**
+cache at `/scrape` time - `/scrape` only does lightweight detail-fetches on promising
+candidates, never full posting bodies, and most scraped jobs never reach `/rank` or
+`/apply` at all; fetching full text for all of them up front would cost far more than it
+saves.
+
+**File:** `job_postings/<normalized-url>.json`, one file per posting URL. Normalize the
+URL for the filename the same way the Company Research Cache normalizes a company name:
+lowercase, strip the `http(s)://` scheme, replace every run of characters that are not
+`a-z0-9` with a single hyphen, trim leading/trailing hyphens (e.g.
+`https://boards.greenhouse.io/acme/jobs/12345?gh_src=x` ->
+`boards-greenhouse-io-acme-jobs-12345-gh-src-x.json`). A near-miss collision between two
+different URLs is the same acceptable-rare tradeoff the Company Research Cache already
+takes on company-name normalization.
+
+**No TTL.** A published posting's text does not change once fetched, unlike company
+research which benefits from a refresh window - so this cache is not time-boxed: once
+written, an entry is reused indefinitely by both consumers. If the user reports that a
+posting has materially changed since it was cached, delete the corresponding
+`job_postings/` file (or re-fetch and overwrite it) rather than trusting stale text -
+there is no automatic refresh to fall back on.
+
+**Schema:**
+```json
+{
+  "url": "https://...",
+  "key": "<the job's key in seen_jobs.json, for cross-reference>",
+  "fetched_date": "YYYY-MM-DD",
+  "posting_text": "<the full extracted posting text, exactly as fetched>"
+}
+```
+
+**Before fetching a posting URL**, check for `job_postings/<normalized-url>.json`. If
+it exists, reuse its `posting_text` instead of fetching - this is a straight substitute
+for the fetch, not a lead to re-verify like a Company Research Cache hit, since it is
+the posting's own text rather than a claim derived from it. If it is missing, fetch as
+normal, then write the file with the fetched text and today's date so the next consumer
+(whichever of `/rank` or `/apply` runs second) benefits.
 
 ## Weighting
 - Technical Skills: 30%
