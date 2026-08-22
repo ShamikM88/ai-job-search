@@ -121,6 +121,10 @@ upskill/*.md
 # **/-prefixed job_scraper/upskill rules above.
 company_research/*.json
 
+# Job posting cache (/rank Step 2, /apply Step 0 - cached posting text, same
+# rationale as company_research/ above).
+job_postings/*.json
+
 # Agent skills: track the source, ignore only deps and logs.
 # (A blanket `.agents/` ignore silently drops the job-search CLI skills from the repo.)
 .agents/**/node_modules/
