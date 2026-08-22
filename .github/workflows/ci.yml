@@ -117,6 +117,10 @@ jobs:
       - name: Compile CV example (lualatex)
         run: |
           cd cv
+          if [ ! -f main_example.tex ]; then
+            echo "cv/main_example.tex is gitignored in this fork (holds real personal data, never committed) - skipping."
+            exit 0
+          fi
           lualatex -interaction=nonstopmode -halt-on-error main_example.tex
           test -f main_example.pdf
           if grep -q '^!' main_example.log; then
@@ -136,7 +140,9 @@ jobs:
           fi
       - name: Verify extractable PDF text
         run: |
-          python3 tools/verify_pdf.py cv/main_example.pdf --min-chars 100
+          if [ -f cv/main_example.pdf ]; then
+            python3 tools/verify_pdf.py cv/main_example.pdf --min-chars 100
+          fi
           python3 tools/verify_pdf.py cover_letters/cover_example.pdf --min-chars 100
       - name: Assert stock PDF structure (upstream template only)
         if: github.repository == 'MadsLorentzen/ai-job-search'
