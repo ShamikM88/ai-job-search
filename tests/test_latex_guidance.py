@@ -65,6 +65,12 @@ class TestBulletBracketTrap(unittest.TestCase):
         )
 
     def test_example_cv_has_no_bracket_labelled_bullets(self):
+        if not EXAMPLE_CV.exists():
+            self.skipTest(
+                "cv/main_example.tex is gitignored in this fork (holds the "
+                "candidate's real personal data, never committed) - nothing "
+                "to check on a fresh checkout."
+            )
         self.assert_no_unbraced_bracket_items(EXAMPLE_CV)
 
     def test_example_cover_letter_has_no_bracket_labelled_bullets(self):
