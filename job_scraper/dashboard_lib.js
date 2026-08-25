@@ -86,14 +86,28 @@ function csvEscape(value) {
  * Stripping it before matching avoids false "Not applied" negatives on an otherwise
  * identical role/company pair. Same rule as export_csv.js.
  */
+/**
+ * Strip zero-width/invisible Unicode characters that leak through from
+ * scraped HTML (zero-width space, zero-width non-joiner/joiner, BOM) - one
+ * of these sitting in a scraped title but absent from the hand-typed
+ * tracker CSV silently breaks the trackerKey lookup below, since a plain
+ * .trim() does not remove them. Found 2026-08-22: EDEKABANK AG's scraped
+ * title carried a U+200B between "Banking" and "(m/w/d)", so the drafted
+ * tracker row never matched and the dashboard showed no application data
+ * at all for that entry.
+ */
+function stripInvisibleChars(text) {
+  return text.replace(new RegExp("[\\u200B\\u200C\\u200D\\uFEFF]", "g"), "")
+}
+
 function normalizeRole(role) {
-  return role
+  return stripInvisibleChars(role)
     .replace(/[\s([]*[mwfd]\s*[/*]\s*[mwfd]\s*(?:[/*]\s*[mwfd]\s*)?\)?\s*$/i, "")
     .trim()
 }
 
 function trackerKey(company, role) {
-  return `${(company ?? "").trim().toLowerCase()}|${normalizeRole((role ?? "").trim().toLowerCase())}`
+  return `${stripInvisibleChars((company ?? "").trim().toLowerCase())}|${normalizeRole(stripInvisibleChars((role ?? "").trim().toLowerCase()))}`
 }
 
 function inferMarket(locationText) {
@@ -116,30 +130,51 @@ async function readVisaDeadline() {
 }
 
 /**
+ * Strip the query string and a trailing slash for tracker/seen_jobs URL matching -
+ * a utm_source or similar tracking param picked up at one point in the pipeline but
+ * not another (or vice versa) shouldn't break the match on an otherwise-identical
+ * posting URL.
+ */
+function normalizeUrlForMatch(url) {
+  return (url ?? "").trim().toLowerCase().replace(/\?.*$/, "").replace(/\/$/, "")
+}
+
+/**
  * The dashboard's detail panel wants the full tracker row - date, fit_rating, notes,
  * cv_file, cover_letter_file, channel, contact_person - so this returns parsed rows
- * keyed by normalized company|role, last-match-wins (a re-application overwrites the
- * earlier row, which is the more current state to show).
+ * keyed two ways: by normalized company|role (existing behaviour) and by normalized
+ * source URL (new). Company+title is a text heuristic that breaks whenever the title
+ * text differs even slightly between where it was captured - e.g. /rank's shorter
+ * triage-stage title vs. /apply's fuller title pulled from the actual posting (found
+ * 2026-08-22: Fenergo's seen_jobs.json title was just "Senior Product Owner" while
+ * the tracker's role was "Senior Product Owner (Transaction Monitoring, FenX Product
+ * Operations)" - same job, no match). The source URL is a far more reliable identity
+ * for the same posting, so findTrackerRow below tries it first and only falls back
+ * to the company+title heuristic when a row has no source URL to match against.
+ * Last-match-wins in both maps - a re-application overwrites the earlier row, which
+ * is the more current state to show.
  */
 async function readTrackerRows(trackerPath) {
   const byKey = new Map()
+  const byUrl = new Map()
   let text
   try {
     text = await Bun.file(trackerPath).text()
   } catch {
-    return byKey
+    return { byKey, byUrl }
   }
   const lines = text.split(/\r?\n/).filter((l) => l.length > 0)
-  if (lines.length < 2) return byKey
+  if (lines.length < 2) return { byKey, byUrl }
   const header = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase())
   const idx = Object.fromEntries(header.map((h, i) => [h, i]))
-  if (idx.company === undefined || idx.role === undefined) return byKey
+  if (idx.company === undefined || idx.role === undefined) return { byKey, byUrl }
   for (const line of lines.slice(1)) {
     const f = parseCsvLine(line)
     const company = (f[idx.company] ?? "").trim()
     const role = (f[idx.role] ?? "").trim()
     if (!company || !role) continue
-    byKey.set(trackerKey(company, role), {
+    const source = f[idx.source] ?? ""
+    const row = {
       date: f[idx.date] ?? "",
       sector: f[idx.sector] ?? "",
       role_type: f[idx.role_type] ?? "",
@@ -150,14 +185,21 @@ async function readTrackerRows(trackerPath) {
       notes: f[idx.notes] ?? "",
       cv_file: f[idx.cv_file] ?? "",
       cover_letter_file: f[idx.cover_letter_file] ?? "",
-      source: f[idx.source] ?? "",
+      source,
       applied_at: f[idx.applied_at] ?? "",
-    })
+    }
+    byKey.set(trackerKey(company, role), row)
+    const normalizedSource = normalizeUrlForMatch(source)
+    if (normalizedSource) byUrl.set(normalizedSource, row)
   }
-  return byKey
+  return { byKey, byUrl }
 }
 
-function findTrackerRow(entry, trackerByKey) {
+function findTrackerRow(entry, trackerByKey, trackerByUrl) {
+  const normalizedUrl = normalizeUrlForMatch(entry.url)
+  if (normalizedUrl && trackerByUrl?.has(normalizedUrl)) {
+    return trackerByUrl.get(normalizedUrl)
+  }
   return trackerByKey.get(trackerKey(entry.company, entry.title)) ?? null
 }
 
@@ -197,9 +239,9 @@ function shortId(key) {
   return (hash >>> 0).toString(36).slice(0, 5).toUpperCase()
 }
 
-function buildJobs(seen, trackerByKey, visaDeadline) {
+function buildJobs(seen, trackerByKey, trackerByUrl, visaDeadline) {
   return Object.entries(seen).map(([key, entry]) => {
-    const tracker = findTrackerRow(entry, trackerByKey)
+    const tracker = findTrackerRow(entry, trackerByKey, trackerByUrl)
     const market = inferMarket(entry.location_text)
     return {
       key,
@@ -273,9 +315,9 @@ function computeStats(jobs) {
 /** Full data payload, read fresh from disk on every call - this is what GET /api/data returns, so every page load and every post-update refresh reflects current file state with no caching or regeneration step anywhere. */
 export async function buildDashboardData() {
   const data = JSON.parse(await Bun.file(JSON_PATH).text())
-  const trackerByKey = await readTrackerRows(TRACKER_PATH)
+  const { byKey: trackerByKey, byUrl: trackerByUrl } = await readTrackerRows(TRACKER_PATH)
   const visaDeadline = await readVisaDeadline()
-  const jobs = buildJobs(data.seen ?? {}, trackerByKey, visaDeadline)
+  const jobs = buildJobs(data.seen ?? {}, trackerByKey, trackerByUrl, visaDeadline)
   const stats = computeStats(jobs)
   const generatedAt = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC"
   return { jobs, stats, generatedAt }
@@ -486,6 +528,14 @@ tbody tr.detail-row td { background: var(--bg); }
 .apply-btn:hover { opacity: .88; }
 .apply-btn:disabled { opacity: .5; cursor: default; }
 
+.copy-btn {
+  background: none; border: none; cursor: pointer; padding: 1px 4px; margin-left: 4px;
+  font-size: 11px; color: var(--muted); border-radius: 4px; vertical-align: middle;
+}
+.copy-btn:hover { color: var(--accent); background: var(--blue-bg); }
+.copy-btn.copied { color: var(--green); }
+.id-cell, .title-cell { display: flex; align-items: center; gap: 2px; }
+
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 6px 4px 14px; }
 .detail-grid h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: .03em; }
 .detail-grid ul { margin: 0; padding-left: 18px; font-size: 13px; }
@@ -633,6 +683,32 @@ footer { color: var(--muted); font-size: 12px; text-align: center; padding: 20px
   }
 
   function badge(text, cls) { return '<span class="badge ' + cls + '">' + text + '</span>'; }
+
+  /** Small icon button that copies the given text to the clipboard on click, with brief visual feedback. Always stops propagation so it never triggers the row's own expand/collapse click handler. */
+  function copyButton(text, label) {
+    const btn = el('button', { class: 'copy-btn', text: '⧉', attrs: { type: 'button', title: 'Copy ' + label } });
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation()
+      try {
+        await navigator.clipboard.writeText(text)
+      } catch {
+        // Clipboard API unavailable (non-secure context, older browser) - fall back to a selection-based copy.
+        const ta = document.createElement('textarea')
+        ta.value = text
+        ta.style.position = 'fixed'
+        ta.style.opacity = '0'
+        document.body.appendChild(ta)
+        ta.select()
+        try { document.execCommand('copy') } catch {}
+        document.body.removeChild(ta)
+      }
+      const original = btn.textContent
+      btn.textContent = '✓'
+      btn.classList.add('copied')
+      setTimeout(() => { btn.textContent = original; btn.classList.remove('copied') }, 1200)
+    })
+    return btn
+  }
 
   async function refreshData() {
     const res = await fetch('/api/data');
@@ -931,13 +1007,26 @@ footer { color: var(--muted); font-size: 12px; text-align: center; padding: 20px
     for (const job of list) {
       const tr = el('tr', { class: 'job-row' });
 
-      tr.appendChild(el('td', { class: 'id-code', text: job.id || '—' }));
+      const tdId = el('td', { class: 'id-code' });
+      const idWrap = el('div', { class: 'id-cell' });
+      idWrap.appendChild(el('span', { text: job.id || '—' }));
+      if (job.id) idWrap.appendChild(copyButton(job.id, 'job code'));
+      tdId.appendChild(idWrap);
+      tr.appendChild(tdId);
 
       const tdCompany = el('td');
       tdCompany.appendChild(el('div', { class: 'company', text: job.company || '—' }));
       tr.appendChild(tdCompany);
 
-      tr.appendChild(el('td', { text: job.title || '—' }));
+      const tdTitle = el('td');
+      const titleWrap = el('div', { class: 'title-cell' });
+      titleWrap.appendChild(el('span', { text: job.title || '—' }));
+      if (job.title) {
+        const copyText = job.company ? job.company + ' — ' + job.title : job.title
+        titleWrap.appendChild(copyButton(copyText, 'listing name (with company)'))
+      }
+      tdTitle.appendChild(titleWrap);
+      tr.appendChild(tdTitle);
       tr.appendChild(el('td', { html: badge(marketLabel(job.market), 'badge-gray') }));
       tr.appendChild(el('td', { class: 'score', text: job.rank_score !== null ? job.rank_score.toFixed(1) : '—' }));
       tr.appendChild(el('td', { html: job.rank_verdict ? badge(job.rank_verdict, verdictBadgeClass(job.rank_verdict)) : badge('Unranked', 'badge-gray') }));
