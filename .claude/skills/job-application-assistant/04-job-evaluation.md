@@ -34,7 +34,7 @@ A role that fails this gate is not scored and not drafted. Everything below appl
 
 The candidate runs a **triple-market search**: UK (Reading-based), Germany (English-speaking roles only), and Ireland (added 2026-08-20).
 
-- **UK roles:** Current Skilled Worker visa expires **February 2027**. The current employer (Cognizant) cannot sponsor a transfer, so a new UK role must come from an employer able to sponsor from scratch. Before scoring any UK posting, check whether the employer is a genuine, active sponsor — an "we sponsor" statement in the posting is not enough on its own; prefer employers with a visible, current sponsor licence. Treat sponsorship uncertainty on a UK posting as a **FLAG**, not an automatic pass — surface it explicitly rather than assuming it will work out, given the Feb 2027 deadline.
+- **UK roles:** Current visa is a Global Mobility visa (Senior or Specialist Worker route), not Skilled Worker — corrected 2026-08-22. Expires **February 2027**. This route is tied to the Cognizant intra-company transfer and is not generally understood to support an in-country sponsorship transfer to an unrelated employer, so a new UK role would likely need a fresh visa application (e.g. a new Skilled Worker visa) sponsored by that employer, not a simple switch. The candidate does currently hold the right to work in the UK today - the constraint is about what a new employer must do to take over sponsorship, not current work authorization. Before scoring any UK posting, check whether the employer is a genuine, active sponsor — a "we sponsor" statement in the posting is not enough on its own; prefer employers with a visible, current sponsor licence. Treat sponsorship uncertainty on a UK posting as a **FLAG**, not an automatic pass — surface it explicitly rather than assuming it will work out, given the Feb 2027 deadline.
 
 #### UK Sponsor Register Check (standard, mandatory for every UK posting)
 
@@ -137,7 +137,7 @@ Does this role advance career goals and contain tasks that energize?
 - Non-task factors: leadership style, department culture, company values, degree of autonomy
 
 **Life situation alignment:** Consider personal constraints:
-- **Security**: Current UK Skilled Worker visa expires February 2027; current employer (Cognizant) cannot sponsor a transfer. UK opportunities are time-pressured and depend on landing an actively-sponsoring employer well before that deadline. Germany opportunities via the Chancenkarte are not sponsorship-dependent and offer an alternative path that isn't gated by the same clock.
+- **Security**: Current UK visa is a Global Mobility visa (Senior or Specialist Worker route, tied to the Cognizant intra-company transfer), not Skilled Worker — corrected 2026-08-22. Expires February 2027; current employer (Cognizant) cannot sponsor a transfer, and this route likely doesn't support an in-country transfer to an unrelated employer either, so a new UK role would probably need a fresh visa application. UK opportunities are time-pressured and depend on landing an actively-sponsoring employer well before that deadline. Germany opportunities via the Chancenkarte are not sponsorship-dependent and offer an alternative path that isn't gated by the same clock.
 - **Flexibility**: [YOUR_SCHEDULE_CONSTRAINTS] <!-- not yet captured - ask directly if relevant -->
 - **Professional development**: Deepening product/PM seniority in payments and fintech; open to broadening into adjacent regulated domains if it accelerates career progression
 
