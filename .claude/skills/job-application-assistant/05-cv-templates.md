@@ -24,17 +24,17 @@ Determine market from the posting's location, not from the target company's HQ �
 
 All CVs use the moderncv LaTeX package with the "banking" style and "blue" color scheme.
 
-**Output file:** `cv/main_<company>_<role>.tex`
+**Output file:** `cv/Shamik_Mukherjee_CV_<company>_<role>.tex`
 **Compile with:** **lualatex** on MiKTeX/TeX Live. pdflatex often fails on modern MiKTeX installs with `fontawesome5` font-expansion errors; lualatex handles the same sources cleanly.
 **Master reference:** `cv/main_example.tex` (comprehensive CV with all competencies, experience, and achievements - use as source when building targeted CVs)
 
 ### Compile command
 
 ```bash
-cd cv && lualatex -interaction=nonstopmode main_<company>_<role>.tex
+cd cv && lualatex -interaction=nonstopmode Shamik_Mukherjee_CV_<company>_<role>.tex
 ```
 
-Expected output: `Output written on main_<company>_<role>.pdf (2 pages, ...)`. Any page count other than 2 is a failure that must be fixed before presenting to the user.
+Expected output: `Output written on Shamik_Mukherjee_CV_<company>_<role>.pdf (2 pages, ...)`. Any page count other than 2 is a failure that must be fixed before presenting to the user.
 
 ## Document Structure
 
@@ -136,7 +136,7 @@ Section headings such as `\section{Core Competencies}`, `Professional Experience
 
 For every German-market role (see "Template routing by market" above). Built on moderncv's **classic** style rather than banking style, because classic's native `\cventry` layout (date in a narrow left column, role/employer/description in a wide right column) already matches German Lebenslauf convention, and it supports a header photo natively via `\photo`.
 
-**Output file:** `cv/main_<company>_<role>.tex` (same naming convention as the banking template — market determines *content*, not the filename pattern)
+**Output file:** `cv/Shamik_Mukherjee_CV_<company>_<role>.tex` (same naming convention as the banking template — market determines *content*, not the filename pattern)
 **Compile with:** lualatex, same as the banking template
 **Master reference:** `cv/main_example_lebenslauf.tex`
 **Photo asset:** `cv/assets/photo.png` (shared across every German-market CV — do not duplicate per role)
@@ -144,7 +144,7 @@ For every German-market role (see "Template routing by market" above). Built on 
 ### Compile command
 
 ```bash
-cd cv && lualatex -interaction=nonstopmode main_<company>_<role>.tex
+cd cv && lualatex -interaction=nonstopmode Shamik_Mukherjee_CV_<company>_<role>.tex
 ```
 
 Expected output: 2 pages, same as the banking template.
@@ -319,7 +319,7 @@ Related trap: a bullet whose text begins with a literal `[` must be braced - `\i
 
 After writing the CV and before presenting to the user, always compile and visually inspect the PDF. Iterate until the layout is clean. Workflow:
 
-1. Run `lualatex -interaction=nonstopmode main_<company>_<role>.tex`
+1. Run `lualatex -interaction=nonstopmode Shamik_Mukherjee_CV_<company>_<role>.tex`
 2. Check the output page count: must be exactly 2
 3. Read the PDF via the Read tool and visually inspect both pages
 4. Check for **orphaned entries**: a `\cventry` title line must never sit alone at the bottom of page 1 with its bullets on page 2
@@ -359,7 +359,7 @@ Restore the highest-relevance item that was previously cut — a CV that ends mi
 Most employers run CVs through an ATS before a human sees them, and the ATS reads the PDF's embedded **text layer**, not the rendered page. A CV can pass visual inspection and still extract as garbage. After the layout passes the compile-and-inspect loop, verify the text layer:
 
 ```bash
-cd cv && pdftotext -layout -enc UTF-8 main_<company>_<role>.pdf main_<company>_<role>.txt
+cd cv && pdftotext -layout -enc UTF-8 Shamik_Mukherjee_CV_<company>_<role>.pdf Shamik_Mukherjee_CV_<company>_<role>.txt
 ```
 
 `pdftotext` comes from [poppler](https://poppler.freedesktop.org/), not the TeX distribution - it is an **optional** dependency. The `-enc UTF-8` flag is not optional: Xpdf-based `pdftotext` builds default to Latin-1 output, which makes every non-ASCII character in a perfectly good CV read back as a replacement character and fail the parseability check below for no real reason. If it is not installed, skip the mechanical check with a warning and rely on the visual PDF read for keyword coverage.
