@@ -1,6 +1,6 @@
 # /gmail-sync - Sync Application Status from Gmail
 
-You are scanning the user's Gmail for status signals on tracked job applications (interview invites, assessment links, offers, rejections) and, once approved, writing the detected changes into `job_search_tracker.csv` and `documents/applications/<company>_<role>/outcome.md` - the same two places `/outcome` writes to, in the same schema.
+You are scanning the user's Gmail for status signals on tracked job applications (interview invites, assessment links, offers, rejections) and, once approved, writing the detected changes into `job_search_tracker.csv` and `documents/applications/<company>_<role>/outcome.md` - the same two places `/outcome` writes to, in the same schema. The same run also surfaces (read-only, never written anywhere) job-recommendation digest emails from portals like StepStone, LinkedIn, Indeed, Xing, and Glassdoor - see Step 5b.
 
 Unlike `/outcome` (which asks the user what happened), `/gmail-sync` classifies real emails on its own - but it never writes on its own. Every classified change is presented as a batch **before** anything touches the tracker or `outcome.md`, and only proceeds once the user approves it (approving the whole batch at once is fine; writing first and flagging it after is not). Because a wrong write silently corrupts application history that `/setup` later calibrates from, every proposed change must cite its source email and every uncertain case must be surfaced instead of guessed. Never treat this command's job as "notice something in an inbox" - it is "propose a correct, sourced line for a permanent record, and write it only once the user says yes."
 
@@ -45,10 +45,11 @@ Lookback window: `since <date>` argument if given, else `state.last_sync` if set
    - `label:<id>` if a job-search label was found
    - A quoted-name OR-group of the open applications' company names, e.g. `{"Acme Corp" "BigCo"}`
    - A sender-domain OR-group of common ATS platforms: `{from:greenhouse.io from:lever.co from:myworkday.com from:ashbyhq.com from:smartrecruiters.com from:icims.com from:bamboohr.com}`
+   - A sender-domain OR-group of job-portal recommendation senders, independent of the open-applications list above (these emails are about *new* jobs, not existing tracked ones): `{from:stepstone.de from:stepstone.com from:jobs-noreply@linkedin.com from:indeed.com from:xing.com from:glassdoor.com}`
    - The lookback bound, e.g. `newer_than:30d` or `after:2026/06/15`
    - `in:inbox` (skip sent/drafts - status signals come from what employers send you, not what you sent them)
 
-Example: `newer_than:30d in:inbox ({"Acme Corp" "BigCo"} OR {from:greenhouse.io from:lever.co from:myworkday.com from:ashbyhq.com})`
+Example: `newer_than:30d in:inbox ({"Acme Corp" "BigCo"} OR {from:greenhouse.io from:lever.co from:myworkday.com from:ashbyhq.com} OR {from:stepstone.de from:jobs-noreply@linkedin.com from:indeed.com})`
 
 4. Call `search_threads` with `view: THREAD_VIEW_MINIMAL`, `pageSize: 50`, paginating via `pageToken` until exhausted or results are clearly outside the relevant window.
 
@@ -78,6 +79,18 @@ For a matched message, classify by content (require the signal phrase in the sub
 
 ---
 
+## Step 5b: Classify Job-Recommendation Emails
+
+This is a **separate, informational-only** track from Step 5 above - it never proposes a tracker or `outcome.md` write, because a recommendation digest is about jobs the candidate hasn't applied to, not a status change on one they have.
+
+For each unprocessed message from a job-portal recommendation sender (the domain group added in Step 3) that Step 5 did **not** already match to an open application as a status signal: check whether it is actually a recommendation/digest email, not something else the same portal sends (an application confirmation, an interview-scheduling email, an account/security notice). Require a digest-style signal phrase in the subject or opening lines - e.g. "jobs recommended for you", "new jobs matching your search", "jobs für Sie ausgewählt", "empfohlene Jobs", "X new jobs posted for [search/title]". A portal email that doesn't match this pattern is not a recommendation email - leave it alone (it may still be relevant to Step 5's matching, or simply irrelevant).
+
+For a confirmed recommendation email, extract every distinct job listing mentioned in the body: title, company, and URL (if the email links directly to a posting rather than a generic search-results page). A digest with only a generic "see all matches" link and no individual listings has nothing to extract - note it was received, but there is nothing to list.
+
+**This step never writes anything and never checks postings against `seen_jobs.json` or the tracker for dedup** - that filtering is `/scrape`'s job, not this one's. Extracted leads are presented as-is in Step 6 for the user to act on (e.g. by pasting the interesting ones to `/rank` or `/apply`), including duplicates of things already tracked - cross-referencing that is out of scope here and would risk silently dropping a lead the user might have wanted to see again.
+
+---
+
 ## Step 6: Present Proposed Updates
 
 **Nothing has been written yet.** Present every classified change from Step 5 as a single batch, so the user can review the full picture before anything touches the tracker or `outcome.md`:
@@ -102,11 +115,18 @@ A row leaving `drafted` shows its date change in the status cell, as row 3 does:
 ### Unmatched Emails (no change proposed)
 - "<subject>" from <sender> - looked job-related but couldn't be confidently linked to a tracked application.
 
+### Job Recommendations Found (informational - not a tracker change, no approval needed)
+| Portal | Title | Company | Received | URL |
+|---|---|---|---|---|
+| StepStone | ... | ... | 2026-07-10 | [Link](...) |
+
+Say explicitly that these are unfiltered leads from portal digest emails, not evaluated or deduped against the tracker - ask if the user wants any of them run through `/rank` or `/apply`.
+
 ### Stale Applications (30+ days, no activity)
 - **<Company>** - last activity YYYY-MM-DD, still `<status>`.
 ```
 
-If the Proposed Changes table would be empty, say so briefly and skip straight to Step 8 (Update State) - there is nothing to approve. Offers still land in the Proposed Changes table (the tracker moves to `offer`); it's only `hired`/`offer_declined` that are never proposed.
+If the Proposed Changes table would be empty, say so briefly and skip straight to Step 8 (Update State) - there is nothing to approve. Offers still land in the Proposed Changes table (the tracker moves to `offer`); it's only `hired`/`offer_declined` that are never proposed. The Job Recommendations table is independent of this - it can have rows even when Proposed Changes is empty, and needs no approval since nothing is written for it; omit the table entirely when no recommendation emails were found this run.
 
 ---
 
@@ -139,7 +159,7 @@ Rows the user skipped are left untouched - no tracker write, no `outcome.md` wri
 
 ## Step 8: Update State
 
-Add every message ID processed this run - approved, skipped, unmatched, or filtered as noise - to `gmail_sync/state.json`'s `processed_message_ids`, and set `last_sync` to today's date. This makes re-running idempotent - the same email never produces a duplicate proposal, tracker note, or Notes entry.
+Add every message ID processed this run - approved, skipped, unmatched, filtered as noise, or surfaced as a Step 5b recommendation - to `gmail_sync/state.json`'s `processed_message_ids`, and set `last_sync` to today's date. This makes re-running idempotent - the same email never produces a duplicate proposal, Notes entry, or recommendation-list row.
 
 ---
 
@@ -190,3 +210,4 @@ If this run pushed the count of applications with a **final** `outcome.md` statu
 7. **Never fabricate a match.** If the company can't be confidently identified from the email, it goes in "Unmatched," not a guess.
 8. **Read-only against Gmail itself.** This command reads and classifies; it does not label, archive, or delete anything in the user's mailbox.
 9. **All state is personal data.** `gmail_sync/state.json`, `job_search_tracker.csv`, and `documents/applications/**` are gitignored - never suggest committing them.
+10. **Recommendation leads (Step 5b) are surfaced only, never persisted.** They are not written to `seen_jobs.json`, the tracker, or anywhere else, and never deduped against existing state - that's `/scrape`'s job. If the user wants one evaluated or tracked, hand it to `/rank` or `/apply` in the same reply rather than trying to replicate that pipeline here.
