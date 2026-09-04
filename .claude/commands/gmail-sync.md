@@ -1,6 +1,6 @@
 # /gmail-sync - Sync Application Status from Gmail
 
-You are scanning the user's Gmail for status signals on tracked job applications (interview invites, assessment links, offers, rejections) and, once approved, writing the detected changes into `job_search_tracker.csv` and `documents/applications/<company>_<role>/outcome.md` - the same two places `/outcome` writes to, in the same schema. The same run also surfaces (read-only, never written anywhere) job-recommendation digest emails from portals like StepStone, LinkedIn, Indeed, Xing, and Glassdoor - see Step 5b.
+You are scanning the user's Gmail for status signals on tracked job applications (interview invites, assessment links, offers, rejections) and, once approved, writing the detected changes into `job_search_tracker.csv` and `documents/applications/<company>_<role>/outcome.md` - the same two places `/outcome` writes to, in the same schema. The same run also surfaces job-recommendation digest emails from portals like StepStone, LinkedIn, Indeed, Xing, and Glassdoor, dedup-checks them, and registers genuinely new leads into `job_scraper/seen_jobs.json` (the same cache `/scrape` writes) so `/rank` can score them on its next run - see Step 5b. This part is read-only against Gmail itself but not against local state, unlike the tracker/`outcome.md` side of this command.
 
 Unlike `/outcome` (which asks the user what happened), `/gmail-sync` classifies real emails on its own - but it never writes on its own. Every classified change is presented as a batch **before** anything touches the tracker or `outcome.md`, and only proceeds once the user approves it (approving the whole batch at once is fine; writing first and flagging it after is not). Because a wrong write silently corrupts application history that `/setup` later calibrates from, every proposed change must cite its source email and every uncertain case must be surfaced instead of guessed. Never treat this command's job as "notice something in an inbox" - it is "propose a correct, sourced line for a permanent record, and write it only once the user says yes."
 
@@ -81,13 +81,17 @@ For a matched message, classify by content (require the signal phrase in the sub
 
 ## Step 5b: Classify Job-Recommendation Emails
 
-This is a **separate, informational-only** track from Step 5 above - it never proposes a tracker or `outcome.md` write, because a recommendation digest is about jobs the candidate hasn't applied to, not a status change on one they have.
+This is a **separate track** from Step 5 above - it never proposes a tracker or `outcome.md` write, because a recommendation digest is about jobs the candidate hasn't applied to, not a status change on one they have. It does, however, write to `job_scraper/seen_jobs.json`, per the dedup-and-register step below - without that, there is nowhere for a surfaced lead to actually go: `/rank` only scores entries that already exist there with `status: "new"`, it does not accept a pasted URL, so a lead that stopped at "presented in chat" was a dead end dressed up as a suggestion to "run /rank on it."
 
 For each unprocessed message from a job-portal recommendation sender (the domain group added in Step 3) that Step 5 did **not** already match to an open application as a status signal: check whether it is actually a recommendation/digest email, not something else the same portal sends (an application confirmation, an interview-scheduling email, an account/security notice). Require a digest-style signal phrase in the subject or opening lines - e.g. "jobs recommended for you", "new jobs matching your search", "jobs für Sie ausgewählt", "empfohlene Jobs", "X new jobs posted for [search/title]". A portal email that doesn't match this pattern is not a recommendation email - leave it alone (it may still be relevant to Step 5's matching, or simply irrelevant).
 
 For a confirmed recommendation email, extract every distinct job listing mentioned in the body: title, company, and URL (if the email links directly to a posting rather than a generic search-results page). A digest with only a generic "see all matches" link and no individual listings has nothing to extract - note it was received, but there is nothing to list.
 
-**This step never writes anything and never checks postings against `seen_jobs.json` or the tracker for dedup** - that filtering is `/scrape`'s job, not this one's. Extracted leads are presented as-is in Step 6 for the user to act on (e.g. by pasting the interesting ones to `/rank` or `/apply`), including duplicates of things already tracked - cross-referencing that is out of scope here and would risk silently dropping a lead the user might have wanted to see again.
+**Dedup and register each extracted lead, reusing `/scrape`'s own Step 2/Step 4 logic exactly** (same file, same schema, same checks - this is not a parallel dedup mechanism, it's the existing one):
+1. Read `job_scraper/seen_jobs.json` and `job_search_tracker.csv` once, if not already loaded this run.
+2. Skip a lead if its URL or company+title combo already exists in `seen_jobs.json` (normalize company names the same mojibake-aware, diacritic-stripping way established for tracker dedup - a raw string mismatch on an umlaut or an encoding artifact is a confirmed real failure mode, not a hypothetical one). Skip if the company+role already appears in `job_search_tracker.csv`. Record skipped leads as "already seen" in Step 6, not silently dropped.
+3. For a lead that clears both checks, add it to `seen_jobs.json` under a new key (its URL, matching `/scrape`'s convention) with `status: "new"`, `portal: "gmail-recommendation"`, `first_seen`: today's date, and `title`/`company`/`url`/`location_text` from what the email provided (`location_text` may be absent if the email didn't state one - do not guess it). Do **not** run a fit assessment here - that's `/rank`'s job on its next invocation, exactly as it is for anything else with `status: "new"`.
+4. This step does not run `/scrape`'s Step 1 (search), Step 2's WebFetch/detail-fetch, Step 2.5 (mass-posting detection), or Step 4.5 (referral links) - it only borrows the dedup check and the write schema for leads that already arrived by email, fully formed. It is not a substitute for `/scrape` and doesn't invoke it.
 
 ---
 
@@ -115,18 +119,21 @@ A row leaving `drafted` shows its date change in the status cell, as row 3 does:
 ### Unmatched Emails (no change proposed)
 - "<subject>" from <sender> - looked job-related but couldn't be confidently linked to a tracked application.
 
-### Job Recommendations Found (informational - not a tracker change, no approval needed)
+### Job Recommendations Found (registered as `new` in seen_jobs.json - no approval needed, nothing scored yet)
 | Portal | Title | Company | Received | URL |
 |---|---|---|---|---|
 | StepStone | ... | ... | 2026-07-10 | [Link](...) |
 
-Say explicitly that these are unfiltered leads from portal digest emails, not evaluated or deduped against the tracker - ask if the user wants any of them run through `/rank` or `/apply`.
+### Recommendations Already Seen (skipped, not re-registered)
+- <Title> at <Company> - already in seen_jobs.json / tracker - [Link](...)
+
+Say explicitly that the registered leads are unscored (`status: "new"`) and ready for `/rank` - suggest running it now if there are enough to be worth a batch, or naming a specific one for `/apply` directly.
 
 ### Stale Applications (30+ days, no activity)
 - **<Company>** - last activity YYYY-MM-DD, still `<status>`.
 ```
 
-If the Proposed Changes table would be empty, say so briefly and skip straight to Step 8 (Update State) - there is nothing to approve. Offers still land in the Proposed Changes table (the tracker moves to `offer`); it's only `hired`/`offer_declined` that are never proposed. The Job Recommendations table is independent of this - it can have rows even when Proposed Changes is empty, and needs no approval since nothing is written for it; omit the table entirely when no recommendation emails were found this run.
+If the Proposed Changes table would be empty, say so briefly and skip straight to Step 8 (Update State) - there is nothing to approve. Offers still land in the Proposed Changes table (the tracker moves to `offer`); it's only `hired`/`offer_declined` that are never proposed. The Job Recommendations tables are independent of this - they can have rows even when Proposed Changes is empty, and need no approval (the `seen_jobs.json` write in Step 5b already happened by the time this is presented, same as Step 5's classification already happened - Step 7's approval gate is specifically for tracker/`outcome.md` writes); omit either table entirely when it would be empty.
 
 ---
 
@@ -202,7 +209,7 @@ If this run pushed the count of applications with a **final** `outcome.md` statu
 ## Important Rules
 
 1. **Classify from full email bodies, never snippets.** A status-changing proposal requires having actually fetched and read the message via `get_thread`/`get_message`.
-2. **Nothing is written before the user approves the Step 6 batch.** Approving everything in one reply is fine UX; writing first and flagging it after is not.
+2. **Nothing is written to the tracker or `outcome.md` before the user approves the Step 6 batch.** Approving everything in one reply is fine UX; writing first and flagging it after is not. This gate is specifically for application history (Step 5/7a) - it does not extend to Step 5b's `seen_jobs.json` registration, which follows `/scrape`'s own precedent of writing to that cache unconditionally, since it is a low-stakes, freely-re-derivable index rather than a permanent record.
 3. **Never propose `hired` or `offer_declined`.** Those require the user's real-world decision; `/gmail-sync` stops at proposing `offer` and flags it.
 4. **A conflicting signal against an already-final or already-written status is a manual-review flag, not a proposed overwrite.** When in doubt, don't propose it - surface it.
 5. **Append-only to `outcome.md` Notes**, same as `/outcome`. Never rewrite or delete existing history.
@@ -210,4 +217,4 @@ If this run pushed the count of applications with a **final** `outcome.md` statu
 7. **Never fabricate a match.** If the company can't be confidently identified from the email, it goes in "Unmatched," not a guess.
 8. **Read-only against Gmail itself.** This command reads and classifies; it does not label, archive, or delete anything in the user's mailbox.
 9. **All state is personal data.** `gmail_sync/state.json`, `job_search_tracker.csv`, and `documents/applications/**` are gitignored - never suggest committing them.
-10. **Recommendation leads (Step 5b) are surfaced only, never persisted.** They are not written to `seen_jobs.json`, the tracker, or anywhere else, and never deduped against existing state - that's `/scrape`'s job. If the user wants one evaluated or tracked, hand it to `/rank` or `/apply` in the same reply rather than trying to replicate that pipeline here.
+10. **Recommendation leads (Step 5b) are dedup-checked and registered into `seen_jobs.json` as `status: "new"`, never scored.** This reuses `/scrape`'s own dedup check and write schema rather than a parallel mechanism - it never runs a fit assessment, never fetches the posting for detail, and never touches the tracker. A registered lead is picked up by the next `/rank` run exactly like anything else with `status: "new"`; it is not evaluated here.
