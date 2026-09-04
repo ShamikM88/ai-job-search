@@ -336,6 +336,15 @@ Include `\usepackage{needspace}` in the preamble.
 
 **Caveat - use `\needspace` before entries, never before `\section` headings.** A section-level `\needspace` pushes the entire section (heading plus content) to the next page whenever the request does not fit, stranding empty space above and typically *adding* a page instead of saving one. Apply it only to the individual `\cventry` that actually orphans, and only after a compile shows the orphan.
 
+**Known limitation - `\cventry` is atomic and cannot be split by shrinking `\needspace`.** moderncv's `\cventry` wraps its header line and bullet list into a single indivisible block. `\needspace{N}` only controls *when* a page break happens before that block - it cannot make the block itself breakable. Shrinking the `\needspace` value (e.g. from `5\baselineskip` down to `2-3\baselineskip`) in the hope that a role's title plus its first bullet or two will land on page 1 while the rest continue on page 2 **does nothing** - confirmed 2026-09-03: the compiled output was byte-for-byte identical before and after the change. The entry either fits on the current page in full, or moves to the next page in full; there is no partial-fit behavior to tune.
+
+If a compile leaves noticeable trailing whitespace on page 1 because the next full `\cventry` doesn't fit but a shorter version of it would have, the only real levers are on the **content side**, not the needspace value:
+- Trim a bullet or tighten wording earlier on page 1 (Profile Statement, Core Competencies, or the *current* role's bullets) so the next entry's full block fits within the reclaimed space.
+- Or add a bullet/expand wording earlier on page 1 to consume the leftover whitespace directly, if the entry pushed to page 2 is *not* meant to move (rare - usually the reverse problem applies).
+- Manually splitting one `\cventry` into two entries (a header-only block followed by a bullets-only continuation with a blank header) is possible but non-standard and typically looks worse than the whitespace it fixes - avoid it unless the user explicitly asks for that specific tradeoff.
+
+Check for this pattern proactively during Step 5b's PDF inspection, not just when the user flags it: if page 1 has a visible empty block of more than 2-3 line-heights at the bottom and page 2 starts with a full `\cventry`, that whitespace was reclaimable and should be addressed by trimming/expanding content, not by tuning `\needspace`.
+
 **Problem: one trailing section spills to page 3 (e.g., References alone on page 3)**
 Add `\enlargethispage{2-3\baselineskip}` before a late section (e.g., before `\section{Honors and Awards}`) to stretch page 2 by a few lines. This is the standard LaTeX rescue for near-miss overflows.
 

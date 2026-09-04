@@ -4,6 +4,35 @@ You are orchestrating a two-agent job application workflow. The job posting is p
 
 Follow these steps **exactly in order**. Do not skip steps.
 
+---
+
+## Spray Mode (`--spray`)
+
+When `$ARGUMENTS` starts with `--spray`, this is a **batch, reduced-depth** run over several postings instead of the single-job flow below. Spray mode exists for lower-priority candidates where full company research and a reviewer pass aren't worth the token cost per job, but the output must still be a real, verification-clean application — spray changes *depth*, never *correctness*.
+
+**Parse the remaining flags:**
+- One or more bare URLs → apply that exact list.
+- `--from-rank` → build the list from `job_scraper/seen_jobs.json`: entries with `status: "ranked"`, excluding any whose `location_verdict` (or legacy `location`) is `FAIL`, whose `language_gate` is `FAIL`, whose `employment_type_gate` is `FAIL` (agency/ANÜ staffing placement or freelance engagement — see `04-job-evaluation.md`'s Employment Type Gate), or that already match a `job_search_tracker.csv` row (cross-reference by normalized company name **and** by normalized posting URL — company-name matching alone misses cases where the same posting was scraped under a different URL shape; normalize by lowercasing, stripping legal-entity suffixes, AND fixing mojibake/stripping diacritics before comparing — a company name with garbled or accented characters that doesn't byte-match the tracker's version is a real, confirmed miss, not a hypothetical one). Also apply this project's standing stricter language rule: a posting whose text states a **hard** language requirement (an explicit CEFR level, or words like "required"/"erforderlich"/"fließend"/"verhandlungssicher"/"native") for a language the candidate hasn't declared at that level auto-excludes the candidate even when `language_gate` is only `FLAG`, not `FAIL` — check `language_note` for this before including a `FLAG` entry. An entry with `employment_type_gate: FLAG` (a direct-employer fixed-term contract, e.g. parental-leave cover) is NOT auto-excluded — include it in the presented candidate list per the step below, but flag its `employment_type_note` inline so the user can decide before it's dispatched, rather than only surfacing it after a full drafting pass has already run. Sort the remaining candidates by `rank_score` descending.
+- `--market <list>` → filter `--from-rank` candidates to those whose `location_text` matches the given market(s) (e.g. `germany,ireland`, `uk`).
+- `--min-score <N>` → drop candidates scoring below N.
+- `--top <N>` → cap the list to the first N after sorting/filtering.
+
+**Present the resolved candidate list to the user before dispatching anything** (title, company, score, location, and a ⏳ marker + `employment_type_note` for any entry with `employment_type_gate: FLAG`) and confirm scope, unless the user already gave an explicit bounded list via `--top`/`--min-score`/`--market` in the same message.
+
+**Dispatch, per this project's standing batch-pacing preference — sequential, never parallel:**
+- Split the confirmed list into batches of ~5 jobs per agent.
+- Dispatch **one agent at a time**, waiting for each to complete before starting the next — do not fire multiple spray-batch agents concurrently.
+- Each agent's prompt: for every job in its batch, run **Step 0 (Parse Input), Step 1 (Evaluate Fit — skip the "ask before drafting" pause; spray mode proceeds straight through for any candidate that already cleared the location/language filters above), Step 2 (Draft), Step 5 (Compile & Inspect, mandatory, unchanged), and Step 6 (Verification Checklist + Step 6b tracker write, unchanged)**.
+- **Skip Step 3 (Reviewer) and Step 4 (Revise) entirely** — no reviewer agent, no research-driven revision pass. This is the one step spray mode removes.
+- **Skip Step 3's deep company research** — draft directly from the posting text and the candidate profile; do not dispatch a separate research pass or write to `company_research/`.
+- Step 5 and Step 6 are **never abbreviated** — every compiled-PDF check, ATS check, and verification-checklist item runs in full for every spray application, exactly as in the single-job flow. This is what keeps spray mode safe to run unattended: the parts that catch fabrication, bad formatting, and mis-masked confidentiality never shrink.
+- **Read shared reference/template files once per batch, not once per job.** `cv/main_example.tex`, `01-candidate-profile.md`, `03-writing-style.md`, `05-cv-templates.md`, `06-cover-letter-templates.md`, and one existing CV/cover-letter pair used as a structural reference are the same across every job in a batch — tell the agent explicitly to Read them at the start of its batch and keep reusing what's already in its context for job 2 through job N, the same "don't re-Read what you already have" rule Step 2 already applies within a single job, just extended across the whole batch. This is a real, safe token saving because these are fixed structure/style/fact-source files, not per-posting content.
+- **Never derive one job's draft from another job's draft, even within the same batch, even for near-identical role titles.** Every CV and cover letter must trace back independently to `01-candidate-profile.md` + `cv/main_example.tex` + CLAUDE.md's Candidate Profile section — the same rule Step 2 states for the single-job flow, restated here because spray mode's missing reviewer/Grounding-Audit pass removes the one thing that would normally catch drift if a later job quietly inherited an earlier job's over-tailored phrasing or a fact that had already drifted. This is not a hypothetical risk: this project has a documented incident (2026-08-19, the Lebenslauf master) where building a CV from a prior derived CV instead of the canonical source silently propagated a missing profile entry into 8 further CVs, 3 of which were submitted before it was caught. Reusing *reference material* (the master CV, template files) is the safe optimization above; reusing a *sibling draft* as a starting point is the same failure mode that caused that incident and stays off-limits regardless of how similar two roles in a batch look.
+
+Report back per batch (job, verdict, tracker status) as each agent completes, same as any other sequential agent run.
+
+---
+
 **Standing rule — write new facts back to the profile.** If the user confirms, corrects or supplies a fact that is not already in `01-candidate-profile.md` — a metric, a project detail, a skill, a scope correction — update that file in the same turn. Do not leave it living only in the conversation or in a draft.
 
 This is not bookkeeping. A fact that exists only in chat **will be treated as unsupported by a later session and stripped from drafts as a fabrication.** Anything absent from the sources does not exist as far as future drafting is concerned, and the loss is silent — a real achievement quietly disappears from every subsequent CV.
