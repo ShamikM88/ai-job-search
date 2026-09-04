@@ -48,6 +48,10 @@ linkedin_Profile.pdf
 *.jpg
 *.jpeg
 *.png
+# Backup copies of the above (e.g. cv/assets/photo_original_896x1200.png.bak,
+# saved before a crop/resize) - the .bak suffix means *.png doesn't match it,
+# but it's the same real photo underneath and just as personal.
+*.bak
 !cover_letters/OpenFonts/fonts/**
 
 # OS files
@@ -85,6 +89,11 @@ cv/main_*.*
 cv/*.txt
 cover_letters/cover_*.*
 cover_letters/Cover_*.*
+# Merged CV+cover-letter PDFs built for single-upload-field portals (pdfpages
+# wrapper around one main_*.pdf + one cover_*.pdf) - same personal-output
+# category as the two files it combines, even though the .tex source itself
+# has no PII.
+cover_letters/merge_*.*
 !cover_letters/cover_example.tex
 
 # documents/ subfolder contents are personal — only README and folder structure are tracked
