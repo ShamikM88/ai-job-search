@@ -112,7 +112,7 @@ Also read the most recent existing CV and cover letter files for concrete struct
 - **Engage nice-to-haves by name** where the profile supports honest adjacency (e.g. "conceptually aligned with <named tool>"), and use the posting's own term over a synonym wherever it is truthfully applicable - including in CV section headings (a posting hiring for "MLOps" should find a heading containing "MLOps", not only a paraphrase).
 - **Address stated logistics and prerequisites** in the cover letter where the posting raises them: security clearance willingness, start date or availability, commute or location fit, and the posting's reference/job ID where one exists. When the employer operates across several countries, a truthful language-capabilities sentence mapped to their footprint is high-value targeting.
 
-### CV (`cv/main_<company>_<role><CV_EXT>`)
+### CV (`cv/Shamik_Mukherjee_CV_<company>_<role><CV_EXT>`)
 - In the **CV language from the profile** (the `CV language:` line in CLAUDE.md's Identity section). When the profile does not set one, default to **English**. Never switch language per posting - the CV language is a profile-level choice, so all CVs stay consistent and reusable
 - Follow the moderncv/banking format from `05-cv-templates.md`
 - Tailor the profile statement and experience bullets to the specific role
@@ -120,7 +120,7 @@ Also read the most recent existing CV and cover letter files for concrete struct
 - Keep to 2 pages
 - **Grounding Audit:** Before writing to disk, audit all tailored bullet points against the union of three sources: `.claude/skills/job-application-assistant/01-candidate-profile.md` + the master CV (`cv/main_example.tex`) + `CLAUDE.md`'s Candidate Profile section to verify that all dates, roles, and metrics match exactly (zero profile drift or fabrication).
 
-### Cover Letter (`cover_letters/cover_<company>_<role><COVER_EXT>`)
+### Cover Letter (`cover_letters/Shamik_Mukherjee_Cover_<company>_<role><COVER_EXT>`)
 - **Match the language of the job posting** (Danish posting -> Danish cover letter, English posting -> English cover letter)
 - Follow the structure from `06-cover-letter-templates.md`
 - Use the `cover.cls` template
@@ -175,11 +175,11 @@ Compare every date, employer, job title, and quantitative metric in both drafts 
 ### 4. Drafts to Review
 Both drafts are provided inline below. Do NOT use the Read tool on the draft files — use these exact texts.
 
-<CV_DRAFT file="cv/main_<COMPANY>_<ROLE><CV_EXT>">
+<CV_DRAFT file="cv/Shamik_Mukherjee_CV_<COMPANY>_<ROLE><CV_EXT>">
 <INSERT_CV_DRAFT_HERE>
 </CV_DRAFT>
 
-<COVER_LETTER_DRAFT file="cover_letters/cover_<COMPANY>_<ROLE><COVER_EXT>">
+<COVER_LETTER_DRAFT file="cover_letters/Shamik_Mukherjee_Cover_<COMPANY>_<ROLE><COVER_EXT>">
 <INSERT_COVER_LETTER_DRAFT_HERE>
 </COVER_LETTER_DRAFT>
 
@@ -196,7 +196,7 @@ Return your feedback in **two parts**:
 A JSON array of concrete edits the drafter can apply directly without re-reading the files. Each edit is an object:
 ```json
 {
-  "file": "cv/main_<COMPANY>_<ROLE><CV_EXT>" | "cover_letters/cover_<COMPANY>_<ROLE><COVER_EXT>",
+  "file": "cv/Shamik_Mukherjee_CV_<COMPANY>_<ROLE><CV_EXT>" | "cover_letters/Shamik_Mukherjee_Cover_<COMPANY>_<ROLE><COVER_EXT>",
   "old_string": "<exact text currently in the draft>",
   "new_string": "<replacement text>",
   "reason": "<one-line rationale: keyword match / company angle / reframing / style / grounding>"
@@ -246,8 +246,8 @@ After all edits are applied, the two files on disk are the final drafts.
 Use `<CV_COMPILE>` and `<COVER_COMPILE>` resolved in Step 2 (the active template's declared compile command, or the stock defaults below if no custom template is active):
 
 ```bash
-cd cv && lualatex -interaction=nonstopmode main_<company>_<role>.tex
-cd ../cover_letters && xelatex -interaction=nonstopmode cover_<company>_<role>.tex
+cd cv && lualatex -interaction=nonstopmode Shamik_Mukherjee_CV_<company>_<role>.tex
+cd ../cover_letters && xelatex -interaction=nonstopmode Shamik_Mukherjee_Cover_<company>_<role>.tex
 ```
 
 - **Stock CV** uses **lualatex** — pdflatex fails on modern MiKTeX with fontawesome5 font-expansion errors. lualatex handles the same sources cleanly.
@@ -260,13 +260,13 @@ If either compile fails, fix the error and re-compile until clean.
 
 Read both PDFs via the Read tool and verify:
 
-**CV (`cv/main_<company>_<role>.pdf`):**
+**CV (`cv/Shamik_Mukherjee_CV_<company>_<role>.pdf`):**
 - [ ] Exactly 2 pages (not 1, not 3)
 - [ ] No orphaned `\cventry` titles — a job/education title line must never sit alone at the bottom of page 1 with its bullets on page 2. This is the most common failure.
 - [ ] Section headings are not isolated at the top of page 2 with only 1-2 lines below
 - [ ] No awkward whitespace gaps
 
-**Cover letter (`cover_letters/cover_<company>_<role>.pdf`):**
+**Cover letter (`cover_letters/Shamik_Mukherjee_Cover_<company>_<role>.pdf`):**
 - [ ] Exactly 1 page
 - [ ] Signature block visible, not cut off or pushed to a second page
 - [ ] Bullet list font matches surrounding body text (both should be Raleway-Medium)
@@ -292,7 +292,7 @@ An ATS parser reads the PDF's embedded **text layer**, not the rendered page —
 **1. Extract the text layer:**
 
 ```bash
-cd cv && pdftotext -layout -enc UTF-8 main_<company>_<role>.pdf main_<company>_<role>.txt
+cd cv && pdftotext -layout -enc UTF-8 Shamik_Mukherjee_CV_<company>_<role>.pdf Shamik_Mukherjee_CV_<company>_<role>.txt
 ```
 
 Read the `.txt` file.
@@ -341,8 +341,8 @@ Summarize 3-5 key decisions made to tailor the application:
 
 ### Files Created
 List the files written:
-- `cv/main_<company>_<role><CV_EXT>`
-- `cover_letters/cover_<company>_<role><COVER_EXT>`
+- `cv/Shamik_Mukherjee_CV_<company>_<role><CV_EXT>`
+- `cover_letters/Shamik_Mukherjee_Cover_<company>_<role><COVER_EXT>`
 
 Tell the user: "Both files are ready for your review. Open them to check the final output before compiling."
 

@@ -280,14 +280,14 @@ After `/apply` creates the LaTeX files:
 
 ```bash
 # Bash / zsh / Git Bash
-cd cv && lualatex main_<company>_<role>.tex && cd ..
-cd cover_letters && xelatex cover_<company>_<role>.tex && cd ..
+cd cv && lualatex Shamik_Mukherjee_CV_<company>_<role>.tex && cd ..
+cd cover_letters && xelatex Shamik_Mukherjee_Cover_<company>_<role>.tex && cd ..
 ```
 
 ```powershell
 # PowerShell
-Set-Location cv; lualatex main_<company>_<role>.tex; Set-Location ..
-Set-Location cover_letters; xelatex cover_<company>_<role>.tex; Set-Location ..
+Set-Location cv; lualatex Shamik_Mukherjee_CV_<company>_<role>.tex; Set-Location ..
+Set-Location cover_letters; xelatex Shamik_Mukherjee_Cover_<company>_<role>.tex; Set-Location ..
 ```
 
 These commands apply to the stock templates (moderncv CV, `cover.cls` cover letter). If you'd rather use your own LaTeX template, run `/add-template` — it captures the template's compile engine, fonts, style rules, and page limit, test-compiles it, and wires it into `/apply`. See the "LaTeX templates" section in the README.
