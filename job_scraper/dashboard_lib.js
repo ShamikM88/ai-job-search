@@ -534,7 +534,7 @@ tbody tr.detail-row td { background: var(--bg); }
 }
 .copy-btn:hover { color: var(--accent); background: var(--blue-bg); }
 .copy-btn.copied { color: var(--green); }
-.id-cell, .title-cell { display: flex; align-items: center; gap: 2px; }
+.id-cell { display: flex; align-items: center; gap: 2px; }
 
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 6px 4px 14px; }
 .detail-grid h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: .03em; }
@@ -1010,7 +1010,8 @@ footer { color: var(--muted); font-size: 12px; text-align: center; padding: 20px
       const tdId = el('td', { class: 'id-code' });
       const idWrap = el('div', { class: 'id-cell' });
       idWrap.appendChild(el('span', { text: job.id || '—' }));
-      if (job.id) idWrap.appendChild(copyButton(job.id, 'job code'));
+      const copyParts = [job.id, job.company, job.title].filter(Boolean);
+      if (copyParts.length) idWrap.appendChild(copyButton(copyParts.join(' — '), 'job code, company & role'));
       tdId.appendChild(idWrap);
       tr.appendChild(tdId);
 
@@ -1019,13 +1020,7 @@ footer { color: var(--muted); font-size: 12px; text-align: center; padding: 20px
       tr.appendChild(tdCompany);
 
       const tdTitle = el('td');
-      const titleWrap = el('div', { class: 'title-cell' });
-      titleWrap.appendChild(el('span', { text: job.title || '—' }));
-      if (job.title) {
-        const copyText = job.company ? job.company + ' — ' + job.title : job.title
-        titleWrap.appendChild(copyButton(copyText, 'listing name (with company)'))
-      }
-      tdTitle.appendChild(titleWrap);
+      tdTitle.appendChild(el('span', { text: job.title || '—' }));
       tr.appendChild(tdTitle);
       tr.appendChild(el('td', { html: badge(marketLabel(job.market), 'badge-gray') }));
       tr.appendChild(el('td', { class: 'score', text: job.rank_score !== null ? job.rank_score.toFixed(1) : '—' }));
