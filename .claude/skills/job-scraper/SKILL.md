@@ -120,10 +120,27 @@ posting even if their URLs differ; this caught a real miss on 2026-08-22 (Equals
 Product Manager - Cards", 4455705006, scraped twice under both URL shapes with drifted
 rank data between the copies).
 
+**Normalize StepStone URLs before dedup-checking, the same way.** StepStone can serve the
+same posting under slug variants that differ only in whether the company name is embedded
+in the URL - e.g. `...--Manager-Product-Owner-eCommerce-Platform-m-w-d-Mannheim-FUCHS-SE--14403035-inline.html`
+and `...--Manager-Product-Owner-eCommerce-Platform-m-w-d-Mannheim--14403035-inline.html`
+(company segment dropped) are the same job when the trailing numeric ID matches - and when
+the company segment is dropped, the scraper's own `company` field can come back `null` for
+that hit too, so a company+title check misses it as well. For `stepstone-search` results,
+extract that ID with a regex on the URL path (the run of digits directly before
+`-inline.html`, e.g. `--(\d+)-inline\.html$`) before checking for duplicates. Compare it
+against every existing `seen_jobs.json` entry's `stepstone_job_id` field, and - for older
+entries that predate the field - extract the ID from their stored `url` the same way rather
+than relying on an exact URL-string match. This caught a real miss on 2026-09-05 (FUCHS SE,
+"Manager / Product Owner eCommerce Platform" and "...Marketing Plattformen", job IDs
+14403035/14404298, both re-scraped under the company-less slug with `company: null`).
+
 For every candidate:
 - Skip if the URL or company+title combo already exists in `seen_jobs.json`
 - For `linkedin-search` results, also skip if the extracted `linkedin_job_id` matches an
   existing entry's `linkedin_job_id` (or an existing entry's URL once extracted the same way)
+- For `stepstone-search` results, also skip if the extracted `stepstone_job_id` matches an
+  existing entry's `stepstone_job_id` (or an existing entry's URL once extracted the same way)
 - Skip if the company+role already appears in `job_search_tracker.csv`
 
 ### Step 2.5: Mass-Posting Detection (within this run)
@@ -164,9 +181,11 @@ For each new job, do a rapid fit check (NOT the full evaluation from `04-job-eva
 
 The `portal` field records which CLI skill produced the job (results are already tagged per portal in Step 1b - persist that tag here). Entries written before this field existed lack it; the health check (Step 4.75) attributes those by matching the URL's domain against each portal's base URL, so do not backfill. `location_text` is the human-readable location as the portal/WebSearch reported it — it feeds the CSV export below and the eventual `/rank` location gate's market inference, and is likewise not backfilled for pre-existing entries that lack it.
 
-For `portal: linkedin-search` entries, also store `linkedin_job_id` - the numeric ID extracted from the URL per Step 2's normalization. It is the true dedup key for LinkedIn, since the same posting surfaces under multiple URL shapes (region subdomain + slug vs. bare `www.linkedin.com/jobs/view/<id>`) that a plain URL-string comparison treats as different entries. Entries written before this field existed lack it; do not backfill - Step 2's dedup check falls back to extracting the ID from the stored `url` on the fly for those. Other portals may have similar URL-shape variance for the same listing, but this normalization is currently scoped to `linkedin-search` (the confirmed case, see Step 2) - extend it to another portal only once a matching duplicate is actually found there.
+For `portal: linkedin-search` entries, also store `linkedin_job_id` - the numeric ID extracted from the URL per Step 2's normalization. It is the true dedup key for LinkedIn, since the same posting surfaces under multiple URL shapes (region subdomain + slug vs. bare `www.linkedin.com/jobs/view/<id>`) that a plain URL-string comparison treats as different entries. Entries written before this field existed lack it; do not backfill - Step 2's dedup check falls back to extracting the ID from the stored `url` on the fly for those.
 
-`/rank` extends this schema additively: ranked entries also carry `rank_score` (0–100 overall score), `rank_verdict` (fit band, e.g. "strong fit"), `rank_date` (ISO date of ranking), the veto fields `location_verdict` and `language_gate` (both PASS/FAIL/FLAG) with `language_note` (the quoted requirement explaining a non-PASS), and `strengths`/`gaps` (1-3 verbatim bullets each, copied from the scoring agent's findings). The `status` field is set to `"ranked"`. Do not drop any of these fields when re-writing entries. Entries ranked before `strengths`/`gaps` existed simply lack them; readers tolerate their absence and never backfill by guessing. Entries ranked before the verdict rename may carry a legacy PASS/FAIL/FLAG string in `location` - read that as the verdict when `location_verdict` is absent; in fresh entries `location` is always a place, never a verdict.
+For `portal: stepstone-search` entries, also store `stepstone_job_id` - the numeric ID extracted from the URL per Step 2's normalization (added 2026-09-05, after the same URL-shape-variance failure mode confirmed on this second portal - see Step 2). It is the true dedup key for StepStone for the same reason: a slug variant that drops the company-name segment (and often returns `company: null` alongside it) is a different URL string for the identical posting. Entries written before this field existed lack it - Step 2's dedup check falls back to extracting the ID from the stored `url` on the fly for those. Other portals may have similar URL-shape variance for the same listing, but this normalization is scoped to the two confirmed cases (`linkedin-search`, `stepstone-search`) - extend it to another portal only once a matching duplicate is actually found there.
+
+`/rank` extends this schema additively: ranked entries also carry `rank_score` (0–100 overall score), `rank_verdict` (fit band, e.g. "strong fit"), `rank_date` (ISO date of ranking), the veto fields `location_verdict`, `language_gate`, and `employment_type_gate` (all PASS/FAIL/FLAG) with `language_note`/`employment_type_note` (the quoted requirement or contract signal explaining a non-PASS), and `strengths`/`gaps` (1-3 verbatim bullets each, copied from the scoring agent's findings). The `status` field is set to `"ranked"`. Do not drop any of these fields when re-writing entries. Entries ranked before `strengths`/`gaps` (or `employment_type_gate`) existed simply lack them; readers tolerate their absence and never backfill by guessing. Entries ranked before the verdict rename may carry a legacy PASS/FAIL/FLAG string in `location` - read that as the verdict when `location_verdict` is absent; in fresh entries `location` is always a place, never a verdict.
 
 2. Only present jobs NOT already in the seen list or tracker.
 
