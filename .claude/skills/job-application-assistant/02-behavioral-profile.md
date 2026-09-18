@@ -20,9 +20,13 @@ framework_version: 1.0.0
 | [DRIVE_4] | [LEVEL] | [DESCRIPTION] |
 
 ## Strongest Behaviors
-- **[BEHAVIOR_1]:** [DESCRIPTION]
-- **[BEHAVIOR_2]:** [DESCRIPTION]
-- **[BEHAVIOR_3]:** [DESCRIPTION]
+<!-- Partial first pass via /expand (2026-09-18), inferred from the OpenCAM Framework case
+study (documents/cv/OpenCAM_Framework_PM_Case_Study.md). Not a full behavioral assessment -
+run /setup --section behavioral for that. Review before relying on this. -->
+- **Self-correcting rigor:** [Inferred from OpenCAM case study] Reopened an issue he had marked resolved after catching that a safety-critical setting had been coded but never actually enabled - didn't re-close it until independently verifying it worked end-to-end
+- **Transparent trade-off disclosure:** [Inferred from OpenCAM case study] Explicitly documented deferred scope ("Won't" items) rather than leaving it unmentioned
+- **Bias to shipping and validating over speculative planning:** [Inferred from OpenCAM case study] Got a working MVP running in one day, then let real usage - not backlog guesswork - drive the next priorities
+- **[BEHAVIOR_4]:** [DESCRIPTION]
 
 ## How You Work Best
 - [ENVIRONMENT_PREFERENCE_1]

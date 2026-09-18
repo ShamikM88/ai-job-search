@@ -13,6 +13,7 @@ framework_version: 1.1.2
 - **Phone:** +44 7442 020030
 - **Email:** shamik.mukherjee.88@gmail.com
 - **LinkedIn:** linkedin.com/in/shamik-mukherjee
+- **GitHub:** github.com/ShamikM88
 - **Status:** Employed (Product Owner, Cognizant Technology Solutions). Nationality: Indian.
 - **Constraints:** Triple-market search: **UK** (based in Reading, Berkshire), **Germany** (English-speaking roles only; German A0), and **Ireland** (added 2026-08-20). UK: current visa is a **Global Mobility visa (Senior or Specialist Worker route)**, not a Skilled Worker visa — corrected 2026-08-22, previously mis-recorded. Expires **February 2027**. This route is tied to the intra-company transfer arrangement (Cognizant India deputation to Cognizant UK); unlike a Skilled Worker visa, it is not generally understood to support a simple in-country sponsorship transfer to an unrelated new employer — a move to a different UK employer would likely require a fresh visa application under a different route (e.g. a new Skilled Worker visa sponsored by that employer) rather than an in-country switch. The candidate does currently, factually hold the right to work in the UK (answer "Yes" to that specific question on application forms) — the correction is about the mechanism for changing employers, not about current work authorization. Cognizant itself cannot sponsor a transfer regardless of route, so UK roles must still be prioritised at employers with an **active, A-rated sponsor licence** — this is time-critical, not a nice-to-have, and if anything more urgent given the fresh-application implication above. Germany: plans to relocate independently via the **Chancenkarte (Opportunity Card)** — eligible, actively preparing application documents (not yet submitted). This route does not require day-one employer sponsorship to *begin*, so it can absorb roles a UK search would have to reject on sponsorship grounds alone — but this is not the same as zero employer involvement ever: converting from the Chancenkarte to a job-based residence permit after hire still involves the employer providing the job contract. Never state or imply "no employer sponsorship needed" on any application document. Ireland: no independent route equivalent to the Chancenkarte — treat like the UK gate, only pursue roles where the employer can sponsor an Irish employment permit (Critical Skills or General Employment Permit); sponsorship-silent postings are unverified, not a pass. **For Germany and Ireland specifically (added 2026-08-20): landing a job and the resulting visa/permit takes priority over staying in the payments/fintech domain.** Moderate or even Weak Fit roles outside payments should be actively surfaced, not screened out, as long as Location and the relevant sponsorship gate are clean. Genuine gaps in years-of-experience or named hard requirements are still real screening risks and must be flagged honestly regardless. Does not extend to the UK, where the candidate already holds the right to work and the constraint is the Feb 2027 deadline, not first-foothold urgency.
 - **Salary baseline:** £70,000 base + £7,800 target bonus (current UK total comp, for benchmarking only — never shown to employers)
@@ -40,7 +41,7 @@ a hard no, not a gap to smooth over. -->
 | English | C2 | Full professional proficiency, native/working language |
 | Bengali | Native | |
 | Hindi | C1 | Highly proficient |
-| German | A0 | Beginner, course planned |
+| German | A0 | Beginner, currently learning (progressed from "course planned" 2026-09-06; using Duolingo, not named on CVs since it's a consumer app rather than a formal course) |
 
 ## Education
 
@@ -114,7 +115,15 @@ Pune City, India · BFS Quality Engineering & Assurance Practice
 
 ### Summer Intern - State Bank of India (05/2013 - 07/2013)
 Mumbai, India · Asset Liability Management Department
-- Research project on factors influencing term deposit rates, undertaken during the MBA programme at IIT Bombay (SJMSOM)
+- Research project on factors influencing term deposit rates, undertaken during the MBA programme at IIT Bombay (SJMSOM); paid stipend, not unpaid
+<!-- STANDING DECISION (2026-09-06): keep this entry here as the historical record, but
+do NOT add it to CVs going forward. A single 3-month paid research project from 12+
+years ago carries minimal signal, and dropping it opens no timeline gap - the M.Mgmt.
+(2012-2014) Education entry already accounts for this period on its own. Repeatedly
+including it (Mastercard, Ferchau, near-miss on Ibykus) has been the direct cause of a
+recurring 2->3 page overflow requiring a rescue fix each time, at real token cost. If a
+future posting specifically asks about undergraduate/MBA-era internships, surface it
+verbally or in a cover letter rather than as a CV cventry. -->
 
 ### Software Engineer (Java) - Tata Consultancy Services (12/2010 - 06/2012)
 Mumbai, India · India's Largest Securities Depository (NSDL)
@@ -122,7 +131,8 @@ Mumbai, India · India's Largest Securities Depository (NSDL)
 
 ## Independent Projects
 <!-- Projects outside of employment: freelance, open source, personal -->
-- None on record yet - ask during follow-up if there are any freelance, open-source, or personal projects to add.
+- **OpenCAM Framework** — Open-source, agentic credit underwriting framework (2026-09, solo-built, ongoing) · [github.com/ShamikM88/open-cam-framework](https://github.com/ShamikM88/open-cam-framework)
+  Built a Maker-Checker multi-agent system (independent Underwriter/drafting and Risk Reviewer/audit LLM agents) that automates Credit Assessment Memorandum drafting for corporate and asset-finance lending, backed by a deterministic policy engine for covenant compliance, source grounding, and financial-figure verification. Directed Claude Code to implement the full system solo — owned product strategy, prompt design for both agents, and policy-engine rules; reviewed and tested every change before merge (35 merged PRs, zero direct-to-main commits, 325 passing tests). Shipped a working MVP in one day, then hardened it via a dedicated 19-issue gap-analysis audit and two live-user-feedback-driven fast-follows (custom spreading-template support; modular "copilot mode" for partial-pipeline use). Validated hands-on with one real analyst to date; designed to be forked and self-calibrated to another institution's own CAM templates and house style. *(source: documents/cv/OpenCAM_Framework_PM_Case_Study.md + GitHub — open-cam-framework)*
 
 ## Technical Skills
 
@@ -136,9 +146,18 @@ Mumbai, India · India's Largest Securities Depository (NSDL)
 ### Commercial & Pre-Sales
 - Business Case Development, Bid Management (RFP/RFI), Commercial Modelling (TCV >$100M), Pricing Strategy, Go-to-Market Strategy, Market & Competitor Research
 
+### AI-Directed Engineering Governance (personal project)
+<!-- source: documents/cv/OpenCAM_Framework_PM_Case_Study.md + GitHub — open-cam-framework.
+Candidate directed Claude Code for all implementation; these are the candidate's own
+architecture/governance decisions, not claims of hands-on coding. -->
+- Multi-agent AI system architecture - specified an independent Maker-Checker verification pattern (no shared reasoning context between drafting and audit agents) and directed Claude Code's implementation
+- AI-output governance & compliance-rule specification - defined deterministic PASS/FAIL/UNRESOLVABLE covenant logic and source-grounding requirements that gate LLM output before human review
+- Production-grade software delivery discipline applied to AI-directed development - protected main branch, 100% PR-based change control, formal issue tracking (GitHub Issues as the solo-project equivalent of Jira) - chosen specifically to preserve human oversight over AI-generated code, following the same principles as an enterprise production engineering team
+- Held AI-directed development to a regression-tested quality bar before treating any feature as done (188 -> 325 passing tests over the project's life)
+
 ### AI Tools
 - Gemini (daily use at work: epic / story drafting, acceptance criteria refinement, stakeholder communication, requirements analysis)
-- Claude (extensive personal-side use, including hands-on work with Claude Code) - not yet the on-the-job tool at Cognizant (Gemini is), but a genuine, current skill worth naming for roles where the employer's own AI tooling is Claude-based, or where broader AI-tool fluency across platforms (not just one vendor) is being assessed
+- Claude (extensive personal-side use, including directing Claude Code to independently build and ship a production-grade multi-agent application solo — OpenCAM Framework: 35 merged PRs, 325 passing tests, working end-to-end pipeline — and to iteratively extend and customize a separate open-source job-search automation framework with new features, e.g. duplicate-posting detection rules, a live application-tracking dashboard, and Gmail-based status sync) - not yet the on-the-job tool at Cognizant (Gemini is), but a genuine, current skill worth naming for roles where the employer's own AI tooling is Claude-based, or where broader AI-tool fluency across platforms (not just one vendor) is being assessed
 
 ### Software & Tools
 - Jira, Confluence, SQL, Microsoft Office 365
