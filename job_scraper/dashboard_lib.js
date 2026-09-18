@@ -835,7 +835,7 @@ footer { color: var(--muted); font-size: 12px; text-align: center; padding: 20px
     if (state.statCard === 'interview' && !applicationFilterValue(job).includes('interview')) return false;
     if (state.statCard === 'offer' && !(applicationFilterValue(job).includes('offer') || applicationFilterValue(job) === 'hired')) return false;
     if (state.statCard === 'ranked' && !job.rank_verdict) return false;
-    if (state.statCard === 'duplicate' && job.status !== 'duplicate') return false;
+    if (state.statCard === 'rejected' && !applicationFilterValue(job).includes('reject')) return false;
     return true;
   }
 
@@ -874,7 +874,7 @@ footer { color: var(--muted); font-size: 12px; text-align: center; padding: 20px
       { key: 'interview', label: 'Interview', num: s.interview },
       { key: 'offer', label: 'Offer', num: s.offer },
       { key: 'excluded', label: 'Excluded', num: s.excluded },
-      { key: 'duplicate', label: 'Duplicates', num: s.duplicates },
+      { key: 'rejected', label: 'Rejected', num: s.rejected },
     ];
     const container = document.getElementById('stats');
     container.innerHTML = '';
