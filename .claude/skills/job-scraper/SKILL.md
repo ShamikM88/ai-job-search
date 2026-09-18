@@ -142,6 +142,26 @@ For every candidate:
 - For `stepstone-search` results, also skip if the extracted `stepstone_job_id` matches an
   existing entry's `stepstone_job_id` (or an existing entry's URL once extracted the same way)
 - Skip if the company+role already appears in `job_search_tracker.csv`
+- **Check for a same-company title repost against every existing `seen_jobs.json` entry, not
+  just this run's pool.** Employers commonly repost an unfilled role under a fresh job ID once
+  the original listing closes rather than editing it in place - this produces a "new" job that
+  passes every ID-based check above (the ID genuinely is different) but is actually the same
+  underlying vacancy. Normalize the candidate's company the same mojibake/diacritic-aware way
+  as tracker dedup, and normalize its title by stripping trailing gender-marker suffixes
+  (`(m/w/d)`, `(w/m/d)`, `(all genders)`, `(f/m/d)`) and collapsing whitespace/punctuation
+  differences before comparing. If a normalized company+title match already exists anywhere in
+  `seen_jobs.json` (any status, any prior `first_seen` date - this is a cross-run check, not
+  scoped to this scrape), treat the new candidate as a repost: add it with `status: "duplicate"`
+  and a `dedup_note` field naming the earlier entry's key and its current status/outcome (e.g.
+  `"repost of job first seen 2026-08-27, still ranked"`) so a reader can see why without
+  cross-referencing by hand. This caught a real gap on 2026-09-06: Avarda UK's "Senior Product
+  Manager - Core Banking Platform" was scraped three times under three distinct LinkedIn job
+  IDs across two scrape dates (once on 2026-08-11, twice more on 2026-08-27) - the URL-shape and
+  job-ID checks above correctly caught the two 2026-08-27 copies as duplicates of each other, but
+  nothing checked either of them against the older 2026-08-11 entry, and the surviving "ranked"
+  copy went on to be dispatched into an `/apply` spray batch before the candidate happened to
+  check the live LinkedIn listing and find it permanently closed ("No longer accepting
+  applications").
 
 ### Step 2.5: Mass-Posting Detection (within this run)
 
@@ -184,6 +204,8 @@ The `portal` field records which CLI skill produced the job (results are already
 For `portal: linkedin-search` entries, also store `linkedin_job_id` - the numeric ID extracted from the URL per Step 2's normalization. It is the true dedup key for LinkedIn, since the same posting surfaces under multiple URL shapes (region subdomain + slug vs. bare `www.linkedin.com/jobs/view/<id>`) that a plain URL-string comparison treats as different entries. Entries written before this field existed lack it; do not backfill - Step 2's dedup check falls back to extracting the ID from the stored `url` on the fly for those.
 
 For `portal: stepstone-search` entries, also store `stepstone_job_id` - the numeric ID extracted from the URL per Step 2's normalization (added 2026-09-05, after the same URL-shape-variance failure mode confirmed on this second portal - see Step 2). It is the true dedup key for StepStone for the same reason: a slug variant that drops the company-name segment (and often returns `company: null` alongside it) is a different URL string for the identical posting. Entries written before this field existed lack it - Step 2's dedup check falls back to extracting the ID from the stored `url` on the fly for those. Other portals may have similar URL-shape variance for the same listing, but this normalization is scoped to the two confirmed cases (`linkedin-search`, `stepstone-search`) - extend it to another portal only once a matching duplicate is actually found there.
+
+An entry written as `status: "duplicate"` because Step 2's same-company title-repost check matched it against an older entry also carries `dedup_note` - a short string naming the earlier entry's key and its current status (e.g. `"repost of job first seen 2026-08-27, still ranked"`), added 2026-09-06 after the Avarda UK repost gap (see Step 2). Entries marked duplicate before this field existed (an exact URL/company+title/job-ID match) are self-evident and don't need it - only backfill it going forward, on new repost-pattern matches.
 
 `/rank` extends this schema additively: ranked entries also carry `rank_score` (0–100 overall score), `rank_verdict` (fit band, e.g. "strong fit"), `rank_date` (ISO date of ranking), the veto fields `location_verdict`, `language_gate`, and `employment_type_gate` (all PASS/FAIL/FLAG) with `language_note`/`employment_type_note` (the quoted requirement or contract signal explaining a non-PASS), and `strengths`/`gaps` (1-3 verbatim bullets each, copied from the scoring agent's findings). The `status` field is set to `"ranked"`. Do not drop any of these fields when re-writing entries. Entries ranked before `strengths`/`gaps` (or `employment_type_gate`) existed simply lack them; readers tolerate their absence and never backfill by guessing. Entries ranked before the verdict rename may carry a legacy PASS/FAIL/FLAG string in `location` - read that as the verdict when `location_verdict` is absent; in fresh entries `location` is always a place, never a verdict.
 
