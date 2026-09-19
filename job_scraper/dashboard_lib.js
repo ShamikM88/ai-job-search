@@ -618,6 +618,19 @@ footer { color: var(--muted); font-size: 12px; text-align: center; padding: 20px
   // verdict/portal, so a radio-style single-select is the right widget, not checkboxes).
   const state = { search: '', market: new Set(), verdict: new Set(), application: new Set(), portal: new Set(), dateRange: 'all', statCard: null, sortKey: 'rank_score', sortDir: 'desc', expanded: new Set() };
 
+  // Optional, purely additive: a comma-separated ?application= query param
+  // pre-populates the Application filter on load (e.g. for a bookmarkable or
+  // scriptable filtered view). Absent param -> unchanged default behavior.
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const appParam = urlParams.get('application');
+    if (appParam) {
+      for (const v of appParam.split(',')) state.application.add(v.trim());
+    }
+  } catch {
+    // Non-browser/URL-unavailable context - ignore, state.application stays empty.
+  }
+
   const MARKET_OPTIONS = [{ value: 'UK', label: 'UK' }, { value: 'DE', label: 'Germany' }, { value: 'IE', label: 'Ireland' }];
   const DATE_RANGE_OPTIONS = [
     { value: 'all', label: 'All time' }, { value: '1', label: 'Last 24 hours' }, { value: '3', label: 'Last 3 days' },
