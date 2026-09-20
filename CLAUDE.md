@@ -56,6 +56,7 @@ This repo is a job application workspace. Claude acts as a career advisor and ap
 - **Primary:** Product/backlog ownership, epic & user story elaboration, acceptance criteria, agile delivery (Scrum, SAFe, PI Planning), stakeholder management
 - **Secondary:** Pre-sales/solution architecture, business case development, commercial modelling & bid management (RFP/RFI), Go-to-Market strategy
 - **Domain:** Digital payments, tokenisation (EMV/virtual cards), wallet integrations (Google Pay, Samsung Pay), issuer push provisioning, B2B integration, regulatory compliance (RBI, PCI)
+- **AI-Directed Delivery:** Multi-agent system architecture, AI-output governance, prompt architecture, Claude Code — directed two independent projects solo (OpenCAM Framework; AI Job Search Automation), each run under a deliberately different governance model matched to its risk. Full detail in `01-candidate-profile.md`'s Independent Projects section; live portfolio at shamik-mukherjee-portfolio.vercel.app
 - **Software:** Jira, Confluence, SQL, Microsoft Office 365, Gemini (AI-augmented delivery)
 
 ### Certifications
