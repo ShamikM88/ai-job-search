@@ -14,7 +14,7 @@ Two templates are in active use, selected by the target role's market — never 
 |---|---|---|
 | UK | moderncv banking style | "Template: LaTeX moderncv (Banking Style)" |
 | Ireland | moderncv banking style (added 2026-08-20) | "Template: LaTeX moderncv (Banking Style)" |
-| Germany | Lebenslauf (moderncv classic + photo) | "Template: Lebenslauf (German-Market CV Format)" |
+| Germany | Lebenslauf (HTML/CSS, two-column sidebar + photo) | "Template: Lebenslauf (German-Market CV Format)" |
 
 Determine market from the posting's location, not from the target company's HQ — a UK-based role at a German company still uses the banking template. Content stays in **English** either way (see CLAUDE.md's `CV language` line) — the Lebenslauf format changes *presentation* (photo, personal-data block, German CV conventions), never the language.
 
@@ -134,70 +134,64 @@ Section headings such as `\section{Core Competencies}`, `Professional Experience
 
 ## Template: Lebenslauf (German-Market CV Format)
 
-For every German-market role (see "Template routing by market" above). Built on moderncv's **classic** style rather than banking style, because classic's native `\cventry` layout (date in a narrow left column, role/employer/description in a wide right column) already matches German Lebenslauf convention, and it supports a header photo natively via `\photo`.
+For every German-market role (see "Template routing by market" above). **This template is HTML/CSS, rendered to PDF via headless Chrome/Edge — not LaTeX.** It replaced an earlier moderncv-classic LaTeX version after a full redesign session (2026-09-20): the two-column sidebar layout (circular photo, colored accent block, contact details) that German-market candidates expect is far easier to get pixel-perfect in CSS than in LaTeX/tikz, and it sidesteps `moderncv`'s classic-style atomic-`\cventry` page-break bug entirely (see the deprecated `.tex` note below) by using real CSS page fragmentation (`break-inside`/`break-before: avoid`/`page`).
 
-**Output file:** `cv/Shamik_Mukherjee_CV_<company>_<role>.tex` (same naming convention as the banking template — market determines *content*, not the filename pattern)
-**Compile with:** lualatex, same as the banking template
-**Master reference:** `cv/main_example_lebenslauf.tex`
+**Output file:** `cv/Shamik_Mukherjee_CV_<company>_<role>.html` (source) → compiled to `cv/Shamik_Mukherjee_CV_<company>_<role>.pdf` (same base filename as the banking `.tex` convention, just a different extension)
+**Render with:** headless Chrome/Edge `--print-to-pdf` (see "Render command" below) — never lualatex/xelatex for this template
+**Master reference:** `cv/main_example_lebenslauf.html` (also compiled once to `cv/main_example_lebenslauf.pdf` as a visual reference)
 **Photo asset:** `cv/assets/photo.png` (shared across every German-market CV — do not duplicate per role)
+**Signature asset:** `cv/assets/signature.jpg` (source: `documents/cv/shamik - sign.jpg`) — a real signature, supplied by the candidate. Never fabricate a stylised/cursive text rendering as a stand-in; if the asset is ever missing, ask the candidate rather than approximating with an italic font.
+**Deprecated:** `cv/main_example_lebenslauf.deprecated-latex-paracol.tex` — the old LaTeX/paracol attempt at the same two-column design. It never fully worked (6 pages, an empty colored sidebar bled onto continuation pages) and is kept only as a historical record. Do not build from it.
+**Backed up separately:** `cv/main_example_lebenslauf.option1-header-polish.tex`/`.pdf` — an earlier, working single-column-with-circular-photo-header LaTeX variant, kept as a fallback design in case the HTML/CSS approach ever needs to be abandoned. Not the active template.
 
-### Compile command
+### Render command
+
+Headless print-to-pdf requires an **absolute `file:///` URL** — a relative path silently fails. Confirm the actual Edge/Chrome binary path once per machine (`msedge.exe` is the default here; `chrome.exe` is the fallback):
 
 ```bash
-cd cv && lualatex -interaction=nonstopmode Shamik_Mukherjee_CV_<company>_<role>.tex
+cd cv
+"/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" --headless --disable-gpu \
+  --print-to-pdf="C:/Projects/ai-job-search/cv/Shamik_Mukherjee_CV_<company>_<role>.pdf" \
+  --no-pdf-header-footer \
+  "file:///C:/Projects/ai-job-search/cv/Shamik_Mukherjee_CV_<company>_<role>.html"
 ```
 
-Expected output: 2 pages, same as the banking template.
+Expected output: 3 pages (this template runs one page longer than the banking template — see "Page structure" below for why that's a deliberate, load-bearing part of the design, not overflow to trim).
 
-### What's different from the banking template
+### Page structure (load-bearing — copy this pattern into every derived CV, don't re-derive it)
 
-- **`\moderncvstyle{classic}`** instead of `banking`.
-- **`\photo[64pt][0.4pt]{assets/photo}`** in the preamble — the only template that includes a photo. Never add a photo to a UK-market (banking-style) CV.
-- **`\title{...}`** under the name — keep this **short** (under ~30 characters). A longer tagline wraps to two lines and collides with the address block that sits to its right in the header; this was a real layout bug caught during template construction, not a hypothetical one. `Product Owner -- Payments \& Wallets` is the tested-safe length.
-- **A "Personal Details" section**, placed immediately after the header, before "Profile":
-  ```latex
-  \section{Personal Details}
-  \begin{tabularx}{\linewidth}{@{}p{0.24\linewidth}p{0.24\linewidth}p{0.18\linewidth}X@{}}
-  \textbf{Date of Birth:} & 09 February 1988 & \textbf{Nationality:} & Indian \\[4pt]
-  \textbf{Marital Status:} & Married & \textbf{Relocation:} & Chancenkarte (Opportunity Card) -- actively preparing application documents \\
-  \end{tabularx}
+Chrome's print engine does not support CSS Paged Media counters (`@page { @bottom-right { content: counter(page) } }` is not implemented in Blink), so page numbers and page-precise layout are achieved with a manual wrapper pattern instead. The master reference implements it as three explicit sections in `<body>`:
+
+1. **`.page1-wrap`** — wraps the sidebar/header row (photo, contact block, name, Personal Details, Profile) plus the first two Professional Experience entries. Given `height: 29.7cm` (the full physical A4 height) and `position: relative`, with `@page :first { margin-top: 0; margin-bottom: 0; }` so it can bleed the accent-color band (`.page1-wrap::before`, `position: absolute; left:0; top:0; bottom:0; width:10pt`) to the true page edge, top and bottom, without pushing real content onto page 2. A `.pagenum` div (`position: absolute; bottom: 12pt; right: 16pt`) inside it reads "1/3".
+2. **`.page2-wrap`** (class `content page2-wrap`) — the *rest* of Professional Experience (repeats the "Professional Experience" `<h2>` with class `restart-page`, which forces `break-before: page`, then continues through Independent Projects and Education). Given `height: calc(29.7cm - 26pt - 28pt)` — the standard printable area once `@page`'s normal 26pt top / 28pt bottom margins are subtracted — so its own `.pagenum` div (bottom-right, "2/3") lands at a consistent position regardless of how much real content it holds.
+3. **`.page3-wrap`** (class `content page3-wrap`) — Skills through the signature. Carries `break-before: page` itself (guaranteeing it starts a fresh page even if page 2's content shrinks or grows later) and the same explicit height as page 2, with its own "3/3" `.pagenum`.
+
+**Why an explicit `height` on each wrapper, not just letting content flow naturally:** an absolutely-positioned child's `bottom: 0` only reaches as far as its positioned ancestor's own box — if the wrapper were left to size itself to its content (which is shorter than a full page, by design), the page-number div and the accent band would both stop wherever the *text* happened to end, not at the page edge. Giving each wrapper an explicit height equal to its printable area is what makes the footer position and the band's reach independent of how much copy is on that particular page.
+
+**Why not go back to a pdfpages/LaTeX merge for page numbers:** an earlier iteration of this template rendered the body content with Chrome and then ran it through a LaTeX `\includepdf`/`pagecommand` overlay to stamp page numbers on afterward. That worked visually but **silently stripped every hyperlink annotation** (`pdfpages` re-embeds pages as flattened content, not as linked PDF objects) — the LinkedIn/GitHub/Portfolio/email links in the sidebar rendered as blue text but weren't clickable. Confirmed by grepping the raw PDF bytes for `/URI`: 10 in the direct Chrome output, 0 after the LaTeX merge. The three-wrapper pattern above exists specifically so page numbering never needs a second toolchain pass — the headless Chrome output *is* the final deliverable.
+
+### What else is specific to this template
+
+- **Two-column header only on page 1** — `.header-row` (`display: flex; align-items: flex-start`) holds `.sidebar` (30% width, light-blue `--sidebar-bg` background, ends at its own content height — not stretched to match the taller right column) and `.header-main` (70% width: name, title, Personal Details, Profile). Everything from Professional Experience onward is single-column, full width, matching the candidate's reference sample template.
+- **A single `--accent` CSS custom property** (currently `#2c7be5`, a brighter blue than the original `#1a5fa8`/`#3873b3` iterations — changed per explicit candidate feedback) drives the name color, section headings, the rule under the name, the accent band, and all sidebar links. Change color scheme in exactly one place (the `:root` block) if asked again.
+- **Photo:** circular (`border-radius: 50%`, `object-fit: cover`, 100pt×100pt) with a soft drop shadow (`box-shadow: 0 6px 14px rgba(0,0,0,0.35), 0 2px 4px rgba(0,0,0,0.25)`) for a 3D "pop" — **no border**. An earlier version used a solid accent-color border; the candidate asked for the shadow treatment instead.
+- **A "Personal Details" section**, immediately after the header, before "Profile":
+  ```html
+  <h2 class="section">Personal Details</h2>
+  <table class="details">
+    <tr><td class="label">Date of Birth:</td><td>09 February 1988</td></tr>
+    <tr><td class="label">Nationality:</td><td>Indian</td></tr>
+    <tr><td class="label">Marital Status:</td><td>Married</td></tr>
+    <tr><td class="label">Relocation:</td><td>Chancenkarte (Opportunity Card) &ndash; actively preparing application documents</td></tr>
+  </table>
   ```
-  Values come from `01-candidate-profile.md`'s "Personal Details (German-market Lebenslauf CVs only)" section — never re-derive or guess them per role. **Never write "no employer sponsorship needed" or similar** — see CLAUDE.md's Germany-roles note for why that overclaims: the Chancenkarte only means entry and job search don't require a sponsor *first* (unlike the UK's licensed-sponsor system), not that the employer has zero role after hire — converting to a job-based residence permit still involves the employer providing the job contract. Keep the label columns at their current widths (`0.24`/`0.24`/`0.18`) — narrower and `Marital Status:` or a `Relocation:`-style label hyphenates mid-word, which is what the first draft of this template did before the widths were fixed.
-- **Skills and Languages use `\cvitem{label}{value}`** (moderncv's built-in two-column item), not bullet lists — matches the tabular label/value convention the rest of the German CV uses. Category labels wrapping to two lines (e.g. "Agile & / Delivery") is normal `\cvitem` behavior at these widths and is not a bug worth fixing.
-- **A closing signature line** at the very end of the document, using the real signature image:
-  ```latex
-  \vspace{20pt}
-  \begin{tabularx}{\linewidth}{@{}X r@{}}
-  Reading, DD.MM.YYYY & \raisebox{-0.5\height}{\includegraphics[height=1.2cm]{assets/signature}} \\
-  \end{tabularx}
-  ```
-  Use the numeric `DD.MM.YYYY` format (German convention), not a spelled-out English date, and set it to the actual date the CV is generated. **Signature asset:** `cv/assets/signature.jpg` (source: `documents/cv/shamik - sign.jpg`) — a real signature, supplied by the candidate. Never fabricate a stylised/cursive text rendering as a stand-in for a signature; if the asset is ever missing, ask the candidate for one rather than approximating with an italic font.
-- **No "References" section.** The candidate's own reference Lebenslauf (`documents/cv/Shamik_Mukherjee_Lebenslauf_EN.pdf`) omits it, matching common German CV practice; don't add one back in in for this template.
+  Values come from `01-candidate-profile.md`'s "Personal Details (German-market Lebenslauf CVs only)" section — never re-derive or guess them per role. **Never write "no employer sponsorship needed" or similar** — see CLAUDE.md's Germany-roles note for why that overclaims: the Chancenkarte only means entry and job search don't require a sponsor *first* (unlike the UK's licensed-sponsor system), not that the employer has zero role after hire — converting to a job-based residence permit still involves the employer providing the job contract.
+- **A closing signature block** at the very end of `.page3-wrap`: the signature image sits *above* a thin ruled line, with the typed name below it (`.signature-block`, `flex-direction: column; align-items: center`) — not side-by-side with the date, which is how earlier iterations had it and which the candidate flagged as "hanging" with no anchor. The date (`Reading, DD.MM.YYYY` — numeric German format, set to the actual generation date) sits at the opposite end of `.signature-row` from the signature block.
+- **Skills and Languages use flex label/value rows** (`.skills-row`/`.lang-row`, a bold fixed-width label div next to a value div) — the CSS equivalent of moderncv's `\cvitem`, keeping the same tabular label/value convention.
+- **No "References" section** — matches the candidate's own reference Lebenslauf and common German CV practice.
+- **Dates on every Professional Experience entry include the month** (`MM/YYYY – MM/YYYY`, e.g. `05/2022 – 01/2026`), not just the year — this was a deliberate candidate request distinguishing this template from earlier year-only iterations.
 
-### Draft with placeholder images, swap in the real ones only on the final pass (trial, added 2026-08-21)
-
-The photo (`\photo[64pt][0.4pt]{assets/photo}`) and the closing signature (`\includegraphics[height=1.2cm]{assets/signature}`) are the two things that make Lebenslauf compiles/inspections more expensive than the banking template: LaTeX reserves page-layout space based on the **declared width/height parameter**, not the source image's actual pixel content, so a tiny placeholder image at the same declared dimensions produces byte-identical page breaks to the real photo/signature — but is far cheaper to visually inspect via the Read tool during iteration.
-
-**Shared placeholder assets** (create once, reuse across every Lebenslauf CV, same convention as the real assets): `cv/assets/photo_placeholder.png`, `cv/assets/signature_placeholder.png` — minimal 1x1-pixel PNGs, already created.
-
-**Workflow:**
-1. During drafting (Step 2), reviewer revision (Step 4), and the entire page-fitting compile/inspect loop (Step 5's first pass), reference `assets/photo_placeholder` and `assets/signature_placeholder` instead of the real assets, using the **exact same declared width/height parameters** the real ones use (`[64pt][0.4pt]` for the photo, `height=1.2cm` for the signature).
-2. Only once page count, layout, and content have fully passed the Verification Checklist against the placeholder version, swap both `\photo{...}` and `\includegraphics{...}` calls back to the real `assets/photo` / `assets/signature` filenames.
-3. Recompile twice (cross-references need a second pass to settle) and run **one final visual inspection with the real images** — confirm the actual photo/signature render correctly (not cropped, not corrupted, correct orientation). This final check is not skippable — the placeholder swap only defers the expensive image inspection, it doesn't remove the need for it once.
-
-**Status: trial.** Being tried on the next 2-3 German-market roles (SIGNAL IDUNA, EDEKABANK, spotixx) to measure actual token savings against this session's established baselines before being treated as a firm rule. If the savings are tangible, this becomes standard practice for every Lebenslauf CV going forward; if not, revert to compiling with the real assets throughout.
-
-### Fixed at the root: classic-style `\cventry` blocks used to be atomic (bug found 2026-08-21, cost 300k+ tokens to diagnose once; root-cause fix applied same day, verified against real content)
-
-`\moderncvstyle{classic}`'s stock `\cventry` (title + bullets) does **not** split across a page break — if the whole block doesn't fit in the space remaining on the current page, LaTeX moves it wholesale to the next page rather than breaking mid-entry. On a Lebenslauf CV this commonly strands blank space at the bottom of page 1 (the first, usually longest, entry doesn't fit) and cascades into a 3rd page for Publications/Honours/the signature line, even though the *content* comfortably fits in 2 pages.
-
-**Root cause, confirmed by reading moderncv's actual source** (`moderncvbodyi.sty`, the body file `classic` loads): `\cventry` wraps its bullet description in a `minipage`, and delegates its header row to `\cvitem`, which wraps everything in a plain `tabular`. Both are genuine LaTeX box types that categorically cannot split across a page break, regardless of content length — this isn't a stylistic choice, it's the same restriction that makes plain `tabular` (as opposed to `longtable`) unable to break across pages.
-
-**Fix (now baked into `cv/main_example_lebenslauf.tex`'s preamble — copy it into every new Lebenslauf CV, don't re-derive it):** a custom `\renewcommand*{\cventry}` that keeps the short header line in the original `\cvitem`/`tabular` row (never itself an issue — one line), but renders the bullet description as a genuine breakable `list` environment (indented via `\leftmargin` to preserve the original column alignment) instead of a `minipage`. Verified empirically with a forced page-break test: a bullet list now splits mid-list across a page break, with the header staying attached to whichever bullets fit rather than the whole entry jumping as one atomic unit. Also verified against the full master reference's real content (photo, Personal Details, all 8 experience entries, Skills, Languages, Publications, Honours, signature) — no visual regressions anywhere.
-
-**This eliminates the failure mode entirely — it does not just make it cheaper to work around.** `\enlargethispage` may still occasionally be useful for ordinary 2-page-budget trimming (the same way it's used in the banking template), but it is no longer the fix for this specific bug, since the bug's root cause no longer exists. Do not reach for `\enlargethispage`-tuning first on a Lebenslauf page-count problem — check whether the CV's preamble actually includes the custom `\cventry` redefinition before doing anything else.
-
-Everything else — profile statement writing, experience bullet tailoring, relevance-weighted cutting, the 2-page budget, the ATS text-layer checks, the compile-and-inspect loop, reverse-chronological ordering — follows the exact same rules as the banking template below. Read those sections too; they are not repeated here.
+Everything else — profile statement writing, experience bullet tailoring, relevance-weighted cutting, the ATS text-layer checks, reverse-chronological ordering — follows the same rules as the banking template below (substituting "render with headless Chrome" for "compile with lualatex" wherever the banking-template instructions say to compile). Read those sections too; they are not repeated here.
 
 ## Section-by-Section Tailoring
 
