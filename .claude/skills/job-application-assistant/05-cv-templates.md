@@ -20,6 +20,18 @@ Determine market from the posting's location, not from the target company's HQ �
 
 **Ireland uses the UK banking template, not the German Lebenslauf.** Irish CV convention follows UK/US norms — no photo, no date of birth, no marital status — and Ireland's Employment Equality Acts prohibit discrimination on those grounds the same way UK law does, so including that personal-data block would look out of place (and mildly risky) on an Irish application, unlike Germany where it's standard practice.
 
+## Portfolio site sync (standing rule, added 2026-09-23)
+
+**Any time `cv/main_example.tex` or `cv/main_example_lebenslauf.html` changes and gets recompiled, the updated PDF must be copied to the portfolio site's downloadable-resume folder — this does not happen automatically, and the portfolio repo is separate from this one.**
+
+1. Recompile the changed master (see each template's own "Render command"/compile instructions below) and run the full Verification Checklist in the workspace root `CLAUDE.md` (compiled-PDF page-count/visual-inspection checks) before treating the new PDF as ready.
+2. Copy the compiled PDF over the matching file in `C:\Projects\shamik-mukherjee-portfolio\public\resume\`:
+   - `cv/main_example.pdf` → `public/resume/Shamik_Mukherjee_CV_UK_Ireland.pdf`
+   - `cv/main_example_lebenslauf.pdf` → `public/resume/Shamik_Mukherjee_CV_Germany_Lebenslauf.pdf`
+3. In the portfolio repo, `git add`/commit/push that file — the site's `ResumeDownloadButton` component serves these two files directly by path, so nothing else in the portfolio codebase needs to change, but the binary itself has to be committed for the live download to update.
+
+This only applies to the two **master** files above (the ones the portfolio site actually links to) — a one-off tailored CV for a specific company/role (`cv/main_<company>_<role>.tex`) never gets ported here.
+
 ## Template: LaTeX moderncv (Banking Style)
 
 All CVs use the moderncv LaTeX package with the "banking" style and "blue" color scheme.
