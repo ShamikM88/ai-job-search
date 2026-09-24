@@ -77,6 +77,17 @@ overlapping (not shared/unified) B2B specs, one per wallet platform, both legacy
 applications with dual-US-DC hosting, API-based with no front end. Spec-ownership direction here is
 the OPPOSITE of GCA: on GCA, Google defined the spec and the candidate built to it; here, the
 network owns the spec and Google/Samsung build to it instead. -->
+<!-- Internal note, not for CVs - scope boundary, confirmed by candidate 2026-09-24 (he'd
+already stated this giving context to an earlier question in this same session): there is a
+separate internal product management team that owns the partner relationship and strategic
+requirements from Google and Samsung. The candidate's own role sits at the implementation
+layer beneath that - taking those requirements and working through the finer functional/
+technical detail, translating them into epics/stories/acceptance criteria, while also defining
+and maintaining the network-side technical specs partner teams build against. This is a real,
+confirmed nuance the CVs and portfolio site don't currently make explicit (they read as if he
+owns the full spec/strategy scope directly) - worth reflecting more explicitly there if this
+inconsistency is ever raised as a concern, but do not rewrite proactively without checking
+first, since the current framing isn't false, just less precise about where the ceiling is. -->
 
 - Own product backlog for edge applications connecting card network to Google Pay and Samsung Pay - translating requirements into epics, user stories, and acceptance criteria for two agile squads
 - Define and maintain B2B integration specifications for wallet provisioning adopted by partner organisations
@@ -160,6 +171,12 @@ verbally or in a cover letter rather than as a CV cventry. -->
 
 ### Software Engineer (Java) - Tata Consultancy Services (12/2010 - 06/2012)
 Mumbai, India · India's Largest Securities Depository (NSDL)
+<!-- Internal note, not for CVs, confirmed by candidate 2026-09-24: "Software Engineer (Java)" is
+the functional description used on CVs/portfolio/LinkedIn Featured CV - same pattern as the
+current Cognizant role's "Product Owner" vs. "Engagement Delivery Lead" split. TCS's own official
+HR title for this role was "Assistant Systems Engineer" (confirmed via LinkedIn's Experience
+section, which lists that as the literal title) - only surface it if directly asked about official
+designation, e.g. a background check or reference letter, same handling as the Cognizant case. -->
 - Engineered enhancements to dematerialisation, rematerialisation, and securities transfer modules
 
 ## Independent Projects
