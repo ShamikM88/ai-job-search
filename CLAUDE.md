@@ -60,8 +60,12 @@ This repo is a job application workspace. Claude acts as a career advisor and ap
 - **Software:** Jira, Confluence, SQL, Microsoft Office 365, Gemini (AI-augmented delivery)
 
 ### Certifications
-<!-- List relevant certifications with dates -->
-- None on record — ask if there are any to add
+<!-- List relevant certifications with dates. Found via a LinkedIn profile audit 2026-09-24
+(candidate hadn't consciously registered these as certifications to track) - both are lapsed,
+so treat inclusion in any CV/application as a judgment call, not an automatic add: ask before
+using either in a live application document. -->
+- Associate Cloud Engineer — Google Cloud (Issued Aug 2021, Expired Aug 2023)
+- Financial Markets: A Beginners' Module — National Stock Exchange of India (Issued Dec 2015, Expired Dec 2020)
 
 ### Publications
 <!-- List peer-reviewed publications, if any -->
