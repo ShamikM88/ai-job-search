@@ -101,6 +101,7 @@ ALLOWED_IGNORE_NEGATIONS = {
     "!cover_letters/OpenFonts/fonts/**",
     "!cover_letters/cover_example.tex",
     "!documents/**/.gitkeep",
+    "!**/job_scraper/README.md",
 }
 
 # Hook commands the template legitimately ships, as "<Event>:<command>" strings.
