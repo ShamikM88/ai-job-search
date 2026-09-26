@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "portfolio-dev",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d C:\\Projects\\shamik-mukherjee-portfolio && bun run dev"],
+      "port": 3000
+    },
+    {
+      "name": "job-dashboard",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "job_scraper/serve_dashboard.js"],
+      "port": 4321
+    }
+  ]
+}
