@@ -113,6 +113,14 @@ documents/postings/**
 # Interview prep and experience records: these name the employers applied to,
 # quote what was submitted, and set out the candidate's weak points.
 documents/interview/**
+# 07-interview-prep.md itself: unlike the rest of this skill's framework files, this one
+# accumulates real, candidate-specific content over time - internal stakeholder-conflict
+# stories, security-architecture detail, real decision criteria - explicitly meant to stay
+# private, never in the public fork this repo otherwise is. Untracked and history-scrubbed
+# 2026-09-27 after it had been pushed to the public remote for several commits; keep it
+# untracked going forward rather than repeat that exposure. The file stays fully populated
+# on disk - only git tracking stops - same treatment as cv/main_*.tex above.
+.claude/skills/job-application-assistant/07-interview-prep.md
 !documents/**/.gitkeep
 
 # Personal job search tracking
