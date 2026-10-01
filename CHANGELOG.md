@@ -15,6 +15,31 @@ per-file diff commands.
 
 ### Added
 
+- **Layout verification tool (`tools/verify_layout.py`)** - measures a compiled CV/cover
+  letter PDF's actual page layout from Poppler word bounding boxes instead of relying on
+  a visual read: orphaned `\cventry` entries split across a page break, internal
+  whitespace holes left by an ejected entry, a page ending well short of its bottom
+  margin, a thin final page, and footer collisions. Ports the tool and its offline
+  synthetic-page test suite (`tests/test_verify_layout.py`, 18 tests, no Poppler or
+  compiled PDF required) from upstream. Addresses a recurring, previously-manual failure
+  mode called out in CLAUDE.md's verification checklist.
+- **Source host verification in `/apply` Step 1** - before drafting starts, classifies a
+  posting URL's hostname as an installed portal board, a known official ATS apex
+  (Greenhouse, Lever, Workday, Ashby, SmartRecruiters, Workable, with fail-closed
+  handling of look-alike/subdomain-spoofing tricks), or neither - surfaced as
+  `⚠ Unverified source host` so a spoofed or fake listing is flagged before tokens and
+  time go into a tailored application.
+- **`posted_date` persisted in `seen_jobs.json`** - `/scrape` now keeps the `date` field
+  every portal CLI's search output already carries (previously used only to scope the
+  run window, then discarded), and **`/rank` rule 7: staleness flag** - a posting whose
+  `posted_date` is 30+ days old stays in the ranking but carries a visible ⚠ marker with
+  its age, flag not veto, so an old-but-still-open posting isn't excluded while a
+  genuinely stale one isn't silently ranked Strong Fit at the top either.
+- **`/outcome` Stale Sweep branch (Step 2c)** - `/outcome stale [N]` / `/outcome sweep [N]`
+  batch-resolves `applied`/`interview` tracker rows quiet for 60+ days (default) into
+  `no_response` in one interactive pass, instead of running `/outcome <company>` per row.
+  Presents a numbered table and always waits for explicit `all`/`select`/`skip`
+  confirmation before writing anything.
 - **Company-research cache for `/apply` and `/interview`** - `/apply` Step 3's reviewer
   agent and `/interview` Step 2 each independently execute the Company Research
   Checklist (`04-job-evaluation.md`) for the same company, so applying and later
