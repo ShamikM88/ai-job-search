@@ -89,14 +89,16 @@ For each promising result from Step 1:
 
 **From CLI results:** Search output already includes title, company, location, date,
 and URL. **Keep the raw `location` string** (e.g. "Berlin, Germany", "London, England,
-United Kingdom") — Step 4 persists it verbatim as `location_text`. For jobs worth a
+United Kingdom") — Step 4 persists it verbatim as `location_text`. **Keep the raw `date`
+string the same way** — Step 4 persists it verbatim as `posted_date`. For jobs worth a
 deeper look, fetch full detail with that portal's `detail` command (see its SKILL.md —
 do not guess flags) to extract **key requirements**, **application deadline**, and a
 brief description snippet.
 
 **From WebSearch results:** Use `WebFetch` on the posting URL and extract the same
-fields manually, including a location string for `location_text`. If it returns HTTP
-403, retry with browser headers via curl per
+fields manually, including a location string for `location_text`. A WebSearch/WebFetch
+result rarely states a clean publication date — leave `posted_date` as `null` rather
+than guessing one. If it returns HTTP 403, retry with browser headers via curl per
 `.claude/skills/job-application-assistant/09-web-research.md` before giving up — most
 bank and corporate sites reject WebFetch's user agent while serving browsers normally.
 
@@ -190,6 +192,7 @@ For each new job, do a rapid fit check (NOT the full evaluation from `04-job-eva
       "company": "...",
       "url": "...",
       "first_seen": "YYYY-MM-DD",
+      "posted_date": "YYYY-MM-DD" | null,
       "fit": "high/medium/low",
       "status": "new/skipped/evaluated/ranked/expired",
       "portal": "<source portal skill, e.g. jobindex-search>",
@@ -200,6 +203,8 @@ For each new job, do a rapid fit check (NOT the full evaluation from `04-job-eva
 ```
 
 The `portal` field records which CLI skill produced the job (results are already tagged per portal in Step 1b - persist that tag here). Entries written before this field existed lack it; the health check (Step 4.75) attributes those by matching the URL's domain against each portal's base URL, so do not backfill. `location_text` is the human-readable location as the portal/WebSearch reported it — it feeds the CSV export below and the eventual `/rank` location gate's market inference, and is likewise not backfilled for pre-existing entries that lack it.
+
+`posted_date` is the posting's own publication date, taken from the `date` field every portal CLI's search output already carries (Step 1b uses that date to scope the run to the last 14 days and then drops it, so nothing downstream could previously distinguish a posting published yesterday from one published two years ago - `first_seen` is when this scraper first saw the entry, not when the employer posted it). Persisting it gives `/rank` a freshness signal to weigh instead of rediscovering the date and recording it in prose that nothing reads. `null` means the portal returned no date for that result (the CLIs emit `date: null` when a listing omits it); a missing key means the entry predates this field - **never infer a posting date** from either, and never backfill by guessing.
 
 For `portal: linkedin-search` entries, also store `linkedin_job_id` - the numeric ID extracted from the URL per Step 2's normalization. It is the true dedup key for LinkedIn, since the same posting surfaces under multiple URL shapes (region subdomain + slug vs. bare `www.linkedin.com/jobs/view/<id>`) that a plain URL-string comparison treats as different entries. Entries written before this field existed lack it; do not backfill - Step 2's dedup check falls back to extracting the ID from the stored `url` on the fly for those.
 
