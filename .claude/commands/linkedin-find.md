@@ -9,7 +9,7 @@ Builds a short list of recent LinkedIn posts the candidate can comment on honest
 Invoke the user-level `linkedin-browser` skill for the search mechanics (URL patterns, relevance sort, people search, reading results). This command adds only what is specific to the candidate:
 
 - **Topic sets that returned real discussion:** `Wero OR "digital euro" OR PSD3 OR "EUDI wallet" OR "instant payments"`, `"agentic payments" OR "agentic commerce"`, `Google Wallet OR Apple Pay OR Samsung Wallet`, `"product owner" OR "product management" AI agents`.
-- **EU-based people:** run a people search for Germany, Ireland, the Netherlands and France with `network=["F","S"]`, then check their recent activity. Skip anyone whose last original post is months old.
+- **EU-based people:** a title-based people search (e.g. "payments product manager") for Germany, Ireland, the Netherlands and France with `network=["F","S"]` rarely yields active posters: on 2026-11-01 three PMs from the first page had an empty activity page, a 1-year-old newest post, and a 1-month-old repost. Prefer authors of posts found in the topic searches, and the commenters under EU posts (Wero, EUDI, PPRO), then check their recent activity. Skip anyone whose last original post is months old.
 
 ## Step 2: Filter
 
