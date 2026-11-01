@@ -41,6 +41,7 @@ Optional arguments:
 1. Read `job_scraper/seen_jobs.json` (create if missing - start with `{"seen": {}}`)
 2. Read `job_search_tracker.csv` to extract already-applied companies+roles
 3. Read `search-queries.md` (this directory) for the search strategy
+4. Read the "Restricted direct employers" section of `confidential_client_info.md` and skip every posting from an employer named there (never register it in `seen_jobs.json`)
 
 ### Step 1: Search
 
