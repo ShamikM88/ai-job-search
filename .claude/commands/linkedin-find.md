@@ -4,15 +4,12 @@ Builds a short list of recent LinkedIn posts the candidate can comment on honest
 
 `$ARGUMENTS` may be a topic (`wallets`, `agentic payments`, `eu`) or empty (use the topic sets below).
 
-## Step 1: Search (built-in browser, `mcp__Claude_Browser__*`)
+## Step 1: Search
 
-Content search URL: `https://www.linkedin.com/search/results/content/?keywords=<query>&datePosted="past-24h"|"past-week"&sortBy="relevance"`
+Invoke the user-level `linkedin-browser` skill for the search mechanics (URL patterns, relevance sort, people search, reading results). This command adds only what is specific to the candidate:
 
-- **Use `sortBy="relevance"` with `past-week`.** Date-sorted keyword search returns mostly vendor ads, fellowship spam and zero-reaction posts (confirmed 2026-11-01).
-- Topic sets that returned real discussion: `Wero OR "digital euro" OR PSD3 OR "EUDI wallet" OR "instant payments"`, `"agentic payments" OR "agentic commerce"`, `Google Wallet OR Apple Pay OR Samsung Wallet`, `"product owner" OR "product management" AI agents`.
-- **Do not put city names in the query.** `product payments (Berlin OR Amsterdam ...)` returns nothing; LinkedIn post search cannot filter by author location.
-- For EU-based people, run a **people** search (`/search/results/people/?keywords=...&geoUrn=["101282230","104738515","102890719","105015875"]&network=["F","S"]`, Germany/Ireland/Netherlands/France) and check their `/recent-activity/all/`. Skip anyone whose last original post is months old: most senior PMs there only repost.
-- Read results with `get_page_text` (max_chars ~12000); never screenshot to read.
+- **Topic sets that returned real discussion:** `Wero OR "digital euro" OR PSD3 OR "EUDI wallet" OR "instant payments"`, `"agentic payments" OR "agentic commerce"`, `Google Wallet OR Apple Pay OR Samsung Wallet`, `"product owner" OR "product management" AI agents`.
+- **EU-based people:** run a people search for Germany, Ireland, the Netherlands and France with `network=["F","S"]`, then check their recent activity. Skip anyone whose last original post is months old.
 
 ## Step 2: Filter
 
