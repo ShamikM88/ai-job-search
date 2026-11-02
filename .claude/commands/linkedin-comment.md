@@ -26,7 +26,7 @@ Self-check before showing: reread each draft as if the post's author were readin
 
 ## Step 3: Approval gate
 
-Show each comment in its own block, plus the planned reaction (Step 4). Wait for an explicit yes on the exact text. A change request means redraft and show again. Never post on "looks good" about something other than the final text.
+Show each comment in its own block, plus the planned reaction (Step 4) and a follow recommendation for the post's author (yes or no, with a one-line reason; a vendor CEO or someone the candidate won't see again is usually no). Following needs the same explicit yes as the comment. Wait for an explicit yes on the exact text. A change request means redraft and show again. Never post on "looks good" about something other than the final text.
 
 ## Step 4: Choose the reaction
 
