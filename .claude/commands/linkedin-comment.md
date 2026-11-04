@@ -17,6 +17,7 @@ Write in plain, human wording. Every draft:
 - **Empathise or relate before giving an opinion** when the post describes a frustration.
 - **No claims about the candidate's experience that `01-candidate-profile.md` or the repo history does not support.** Never borrow an example from the post itself and present it as the candidate's. Don't force wallet provisioning or payments in; react to the post's own point.
 - **Banned patterns** (rejected as "AI slop"): tidy contrasts ("a cap bounds how much, not what"), "X shifts Y to Z", "the one that matters", "worth reading twice", "Congrats to the team", "I'd be curious", a neat closing line, em dashes, three-item lists, "Great post".
+- **A comment may be a point of view.** It does not have to say "this is what I did". Practical experience from the profile or repo is preferred where it genuinely fits, but a reasoned view on the post's argument is fine without it (user, 2026-11-04). A view is written as a view, never dressed up as experience.
 - **Third person for process language**, not "I'd want...", where the candidate would be asserting a preference they have not stated.
 - **Accuracy rules:** say "network side" or "payments / wallets", never "issuer side"; never name the client or the network (see CLAUDE.md Confidentiality and `confidential_client_info.md`).
 - Vary angle across the batch so two comments don't make the same point.

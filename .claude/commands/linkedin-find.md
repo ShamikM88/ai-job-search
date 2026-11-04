@@ -23,13 +23,13 @@ Invoke the user-level `linkedin-browser` skill for the search mechanics (URL pat
 
 Drop: vendor/promo posts, job ads, newsletter plugs, hype lists, posts over ~3 days old (unless 10+ comments and still active), anything the candidate already commented on, and anything they could only comment on by inventing experience.
 
-Keep a post when it makes a specific argument in payments, wallets, tokenisation, agentic payments, EU payments regulation, or product ownership of regulated or AI-driven delivery, and the candidate has a real point to add or a real answer to its question.
+Keep a post when it makes a specific argument in payments, wallets, tokenisation, agentic payments, EU payments regulation, or product ownership of regulated or AI-driven delivery, and the candidate has a real point to add or a real answer to its question. The point can be a reasoned point of view; backing it with the candidate's practical experience is preferred but not required (user, 2026-11-04). Still never invent experience.
 
 Prefer posts that are recent and low-comment (early comments get seen), and authors in the target markets, Germany first (then wider EU, Ireland, UK).
 
 ## Step 3: Present
 
-Max 5 posts. For each: author and headline, age, reaction/comment counts, one line on the post's point, and one line on why the candidate could comment (the angle, not the comment). Flag the author's likely location when the headline or profile shows it. Note anything skipped and why, in one line.
+Max 5 posts. For each: author and headline, age, reaction/comment counts, one line on the post's point, and one line on why the candidate could comment (the angle, not the comment), marked as experience-backed or point of view. Flag the author's likely location when the headline or profile shows it. Note anything skipped and why, in one line.
 
 Then offer: "Want drafts? `/linkedin-comment` with your picks."
 
