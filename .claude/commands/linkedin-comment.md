@@ -23,7 +23,7 @@ Write in plain, human wording. Every draft:
 - Vary angle across the batch so two comments don't make the same point.
 - Relevant work (the Claude skills saved in the candidate's private repo, the OpenCAM agent rules) may be mentioned where it genuinely fits, in the candidate's own words.
 
-Self-check before showing: reread each draft as if the post's author were reading it. If it sounds like a summary, trim it.
+Run the user-level `humanize` skill on each draft before showing it, then self-check: reread each draft as if the post's author were reading it. If it sounds like a summary, trim it.
 
 ## Step 3: Approval gate
 
