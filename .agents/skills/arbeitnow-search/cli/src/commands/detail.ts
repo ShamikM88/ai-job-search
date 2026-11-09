@@ -1,4 +1,4 @@
-import { htmlFetch, parseJobDetail, writeError } from "../helpers.js"
+import { htmlFetch, isArbeitnowUrl, parseJobDetail, writeError } from "../helpers.js"
 
 export interface DetailOpts {
   id: string
@@ -6,7 +6,7 @@ export interface DetailOpts {
 }
 
 function toUrl(input: string): string | null {
-  if (input.startsWith("http")) return input
+  if (input.startsWith("http")) return isArbeitnowUrl(input) ? input : null
   if (input.startsWith("/jobs/companies/")) return `https://www.arbeitnow.com${input}`
   return null
 }
@@ -15,7 +15,7 @@ export async function runDetail(opts: DetailOpts): Promise<number> {
   const url = toUrl(opts.id)
   if (!url) {
     writeError(
-      `"${opts.id}" is not a job URL. Arbeitnow job slugs alone can't be turned into a URL (the URL also needs the company slug) — pass the full "url" field from a search result instead.`,
+      `"${opts.id}" is not an arbeitnow.com job URL. Arbeitnow job slugs alone can't be turned into a URL (the URL also needs the company slug) — pass the full "url" field from a search result instead.`,
       "BAD_ID",
     )
     return 1

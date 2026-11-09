@@ -19,11 +19,25 @@ export function writeError(error: string, code: string): void {
   process.stderr.write(JSON.stringify({ error, code }) + "\n")
 }
 
-const UA =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
-  "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+// An honest user-agent: this is a low-volume personal tool, not a browser.
+const UA = "arbeitnow-search/1.0 (personal job-search tool, low volume)"
+
+const ALLOWED_HOSTS = new Set(["www.arbeitnow.com", "arbeitnow.com"])
+
+/** True only for an https URL on arbeitnow.com. Every request in this CLI goes through this check. */
+export function isArbeitnowUrl(input: string): boolean {
+  try {
+    const u = new URL(input)
+    return u.protocol === "https:" && ALLOWED_HOSTS.has(u.hostname)
+  } catch {
+    return false
+  }
+}
 
 async function fetchWithBackoff(url: string, accept: string): Promise<Response> {
+  if (!isArbeitnowUrl(url)) {
+    throw new Error("Refusing to request a host other than arbeitnow.com")
+  }
   const maxRetries = 6
   let delay = 500
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -40,6 +54,10 @@ async function fetchWithBackoff(url: string, accept: string): Promise<Response> 
       await new Promise((r) => setTimeout(r, delay + jitter))
       delay = Math.min(delay * 2, 8000)
       continue
+    }
+    // A redirect must not take us off arbeitnow.com.
+    if (!isArbeitnowUrl(response.url)) {
+      throw new Error("Refusing a redirect to a host other than arbeitnow.com")
     }
     return response
   }

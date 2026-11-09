@@ -28,7 +28,7 @@ roles.
 Arbeitnow's public API response embeds its own terms: *"This is a free public API for jobs,
 please do not abuse... By using the API, you agree to the terms of service present on
 Arbeitnow.com."* Nothing this skill touches is disallowed by robots.txt, but **keep volume low,
-don't use it for bulk data collection, and run it on your own responsibility.**
+don't use it for bulk data collection, and run it on your own responsibility.** The CLI only contacts arbeitnow.com (it refuses any other host, including via redirects) and identifies itself with its own user-agent rather than posing as a browser.
 
 ## When to use this skill
 
