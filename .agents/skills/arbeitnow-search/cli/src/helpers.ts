@@ -22,9 +22,13 @@ export function writeError(error: string, code: string): void {
 // An honest user-agent: this is a low-volume personal tool, not a browser.
 const UA = "arbeitnow-search/1.0 (personal job-search tool, low volume)"
 
-const ALLOWED_HOSTS = new Set(["www.arbeitnow.com", "arbeitnow.com"])
+// The API returns job URLs on Arbeitnow's regional domains as well as arbeitnow.com
+// (observed 2026-11-10: .com, .co.uk, .fr, .ch, .nl), so all of them are allowed.
+const ALLOWED_HOSTS = new Set(
+  ["com", "co.uk", "fr", "ch", "nl"].flatMap((tld) => [`arbeitnow.${tld}`, `www.arbeitnow.${tld}`]),
+)
 
-/** True only for an https URL on arbeitnow.com. Every request in this CLI goes through this check. */
+/** True only for an https URL on one of Arbeitnow's own domains. Every request in this CLI goes through this check. */
 export function isArbeitnowUrl(input: string): boolean {
   try {
     const u = new URL(input)
@@ -34,20 +38,62 @@ export function isArbeitnowUrl(input: string): boolean {
   }
 }
 
-async function fetchWithBackoff(url: string, accept: string): Promise<Response> {
-  if (!isArbeitnowUrl(url)) {
-    throw new Error("Refusing to request a host other than arbeitnow.com")
+const MAX_REDIRECTS = 5
+
+/** Apply pages are never requested: this tool only reads postings. (Arbeitnow's robots.txt disallowed them when this was written.) */
+export function isDisallowedPath(input: string): boolean {
+  try {
+    return /^\/jobs\/companies\/.*\/apply/.test(new URL(input).pathname)
+  } catch {
+    return true
   }
+}
+
+function assertAllowedUrl(url: string): void {
+  if (!isArbeitnowUrl(url)) {
+    throw new Error("Refusing to request a host other than Arbeitnow's own domains")
+  }
+  if (isDisallowedPath(url)) {
+    throw new Error("Refusing an apply page: this tool only reads postings")
+  }
+}
+
+/** Resolve a redirect target and check it BEFORE any request is made to it. */
+export function nextRedirectUrl(current: string, location: string | null): string {
+  if (!location) throw new Error("Redirect without a Location header")
+  const next = new URL(location, current).href
+  assertAllowedUrl(next)
+  return next
+}
+
+/** Strip terminal control characters (ESC, C0, C1, DEL) from remote text before printing it. */
+export function stripControl(text: string, keepNewlines = false): string {
+  return keepNewlines
+    ? text.replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g, "")
+    : text.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ")
+}
+
+async function fetchWithBackoff(startUrl: string, accept: string): Promise<Response> {
+  let url = startUrl
+  assertAllowedUrl(url)
   const maxRetries = 6
   let delay = 500
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  let retries = 0
+  let redirects = 0
+  for (;;) {
+    // Redirects are followed by hand so the target is checked before it is requested.
     const response = await fetch(url, {
       headers: { "User-Agent": UA, Accept: accept },
-      redirect: "follow",
+      redirect: "manual",
       signal: AbortSignal.timeout(15000),
     })
+    if (response.status >= 300 && response.status < 400 && response.status !== 304) {
+      if (++redirects > MAX_REDIRECTS) throw new Error("Too many redirects")
+      url = nextRedirectUrl(url, response.headers.get("location"))
+      continue
+    }
     if (response.status === 429 || response.status >= 500) {
-      if (attempt === maxRetries) {
+      if (retries++ >= maxRetries) {
         throw new Error(`Request failed: ${response.status} ${response.statusText}`)
       }
       const jitter = Math.floor(Math.random() * 500)
@@ -55,13 +101,8 @@ async function fetchWithBackoff(url: string, accept: string): Promise<Response> 
       delay = Math.min(delay * 2, 8000)
       continue
     }
-    // A redirect must not take us off arbeitnow.com.
-    if (!isArbeitnowUrl(response.url)) {
-      throw new Error("Refusing a redirect to a host other than arbeitnow.com")
-    }
     return response
   }
-  throw new Error("Request failed after max retries")
 }
 
 interface ApiJob {
@@ -159,7 +200,6 @@ const NAMED_ENTITIES: Record<string, string> = {
 
 export function decodeHtmlEntities(text: string): string {
   return text
-    .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
@@ -169,6 +209,7 @@ export function decodeHtmlEntities(text: string): string {
     .replace(/&#[xX]([0-9a-fA-F]+);/g, (_, hex) => numericEntity(parseInt(hex, 16)))
     .replace(/&([a-zA-Z]+);/g, (full, name) => NAMED_ENTITIES[name] ?? full)
     .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&") // last, so "&amp;lt;" stays "&lt;" instead of becoming "<"
 }
 
 /** Convert the API's raw description HTML to clean plain text with paragraph breaks. */
