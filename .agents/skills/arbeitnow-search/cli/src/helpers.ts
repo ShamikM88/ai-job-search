@@ -40,10 +40,29 @@ export function isArbeitnowUrl(input: string): boolean {
 
 const MAX_REDIRECTS = 5
 
-/** Apply pages are never requested: this tool only reads postings. (Arbeitnow's robots.txt disallowed them when this was written.) */
+/**
+ * URLs this tool never requests: apply pages (it only reads postings) and URLs carrying the
+ * `?__hstc` tracking parameter that Arbeitnow's robots.txt disallows (`/*?__hstc`). An older
+ * robots.txt also disallowed the apply pages.
+ */
 export function isDisallowedPath(input: string): boolean {
   try {
-    return /^\/jobs\/companies\/.*\/apply/.test(new URL(input).pathname)
+    const u = new URL(input)
+    // Decode up to three times so %61pply and double-encoded forms are caught too.
+    let decoded = u.pathname
+    for (let i = 0; i < 3; i++) {
+      let next: string
+      try {
+        next = decodeURIComponent(decoded)
+      } catch {
+        return true // an undecodable path is refused
+      }
+      if (next === decoded) break
+      decoded = next
+    }
+    const apply = /^\/jobs\/companies\/.*\/apply/i
+    const tracking = [...u.searchParams.keys()].some((k) => k.toLowerCase().startsWith("__hstc"))
+    return apply.test(u.pathname) || apply.test(decoded) || tracking
   } catch {
     return true
   }
@@ -54,7 +73,7 @@ function assertAllowedUrl(url: string): void {
     throw new Error("Refusing to request a host other than Arbeitnow's own domains")
   }
   if (isDisallowedPath(url)) {
-    throw new Error("Refusing an apply page: this tool only reads postings")
+    throw new Error("Refusing an apply page or a tracking-parameter URL: this tool only reads postings")
   }
 }
 
@@ -64,6 +83,16 @@ export function nextRedirectUrl(current: string, location: string | null): strin
   const next = new URL(location, current).href
   assertAllowedUrl(next)
   return next
+}
+
+/** Strip terminal control characters (ESC, C0, C1, DEL) from every string in a value, before JSON output. */
+export function cleanDeep<T>(value: T, keepNewlines = false): T {
+  if (typeof value === "string") return stripControl(value, keepNewlines) as T
+  if (Array.isArray(value)) return value.map((v) => cleanDeep(v, keepNewlines)) as T
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, cleanDeep(v, keepNewlines)])) as T
+  }
+  return value
 }
 
 /** Strip terminal control characters (ESC, C0, C1, DEL) from remote text before printing it. */
